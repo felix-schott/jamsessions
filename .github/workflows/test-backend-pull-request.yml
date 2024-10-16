@@ -8,21 +8,22 @@ on:
 jobs:
   test-backend:
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: './backend'
     steps:
       - uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: ${{ vars.GO_VERSION }}
+          cache-dependency-path: '**/go.sum'
       - name: Install dependencies
-        working-directory: ./backend
         run: go get .
       - name: Run test suite
-        working-directory: ./backend
         run: make test-ci > test_results.json
       - name: Upload Go test results
         uses: actions/upload-artifact@v4
         with:
           name: backend_test_results
-          path: backend/test_results.json
+          path: '**/test_results.json'
