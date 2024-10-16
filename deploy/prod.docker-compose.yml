@@ -18,14 +18,7 @@ services:
       retries: 3
 
   prod_api:
-    build:
-      context: backend
-      target: production
-      args:
-        GO_VERSION: 1.23
-        USER: $PROD_USER
-        UID: $PROD_UID
-    image: jamsessions_prod_api
+    image: ghcr.io/felix-schott/jamsessions-server:latest
     container_name: jamsessions_prod_api
     volumes:
       - "/home/$PROD_USER/migrations:/app/migrations"
@@ -52,7 +45,6 @@ services:
     container_name: jamsessions_prod_frontend
     environment:
       API_ADDRESS: http://localhost:$PROD_API_PORT
-      # TILES_ADDRESS: http://localhost:$PROD_TILES_PORT
     volumes:
       - "node_modules_jamsessions_prod:/workspace/node_modules"
     command: ["--", "--host", "0.0.0.0", "--port", "5173"]
