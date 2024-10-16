@@ -26,14 +26,4 @@ jobs:
           echo 'READ_WRITE_PASSWORD="Tq43938!Tq43938!"' >> .env
           echo 'POSTGRES_DB="london_jam_sessions"' >> .env
       - name: Run test suite
-        run: make test-ci > test_results.json
-        continue-on-error: true
-      - name: Check docker logs
-        run: |
-          docker ps -a
-          docker logs jamsessions_test_db
-      - name: Upload Go test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend_test_results
-          path: '**/test_results.json'
+        run: make test-ci
