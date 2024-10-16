@@ -1,0 +1,29 @@
+name: Build and release dbcli binary when a tag is created
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-dbcli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+      - name: Install dependencies
+        working-directory: ./backend
+        run: go get .
+      - name: Build bin/dbcli
+        working-directory: ./backend
+        run: make bin/dbcli
+      - name: Generate changelog
+        run: sed -n '/^## \[${{ github.ref }}\] .*/,/^## .*/{//!p}' > ${{ github.workspace }}-CHANGELOG.md # extract relevant section from CHANGELOG.md
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./backend/bin/dbcli
+          body_path: ${{ github.workspace }}-CHANGELOG.md
