@@ -322,8 +322,8 @@ func PatchSessionById(c *fuego.ContextWithBody[types.SessionProperties]) (types.
 		slog.Error("PatchSessionById", "id", id, "msg", err)
 		return types.SessionFeature[types.SessionProperties]{}, errors.New("an unknown error occured")
 	}
-	cmd := fmt.Sprintf("dbcli update session %v '%v'", id, string(j))
-	return types.SessionFeature[types.SessionProperties]{}, writeMigration(cmd, "update_session_"+string(id), migrationsDirectory)
+	cmd := fmt.Sprintf("dbcli update session %v '%s'", id, j)
+	return types.SessionFeature[types.SessionProperties]{}, writeMigration(cmd, fmt.Sprintf("update_session_%v", id), migrationsDirectory)
 }
 
 type CommentBody struct {
@@ -368,7 +368,7 @@ func PostSuggestionsForSessionById(c *fuego.ContextWithBody[CommentBody]) (types
 		return types.SessionFeature[types.SessionProperties]{}, err
 	}
 
-	fp := filepath.Join(suggestionsDirectory, time.Now().Format(time.RFC3339)+"_session_"+string(id))
+	fp := filepath.Join(suggestionsDirectory, fmt.Sprintf("%v_session_%v", time.Now().Format(time.RFC3339), (id)))
 	slog.Info("writing suggestion", "filepath", fp)
 	os.WriteFile(fp, []byte(fmt.Sprintf("Session %v: %v", id, body.Comment)), fs.FileMode(int(0755)))
 	return types.SessionFeature[types.SessionProperties]{}, nil
@@ -382,7 +382,7 @@ func DeleteSessionById(c *fuego.ContextNoBody) (types.SessionFeature[types.Sessi
 		return types.SessionFeature[types.SessionProperties]{}, fuego.BadRequestError{Detail: fmt.Sprintf("Please provide a numeric ID ('/jamsession/{id}'), got: %v", c.PathParam("id"))}
 	}
 	cmd := fmt.Sprintf("dbcli delete session %v", id)
-	return types.SessionFeature[types.SessionProperties]{}, writeMigration(cmd, "delete_session_"+string(id), migrationsDirectory)
+	return types.SessionFeature[types.SessionProperties]{}, writeMigration(cmd, fmt.Sprintf("delete_session_%v", id), migrationsDirectory)
 }
 
 func PostVenue(c *fuego.ContextWithBody[types.VenueProperties]) (types.VenueFeature, error) {
@@ -396,7 +396,7 @@ func PostVenue(c *fuego.ContextWithBody[types.VenueProperties]) (types.VenueFeat
 		slog.Error("PostVenue", "msg", err)
 		return types.VenueFeature{}, errors.New("an unknown error occured")
 	}
-	cmd := fmt.Sprintf("dbcli insert venue '%v'", string(j))
+	cmd := fmt.Sprintf("dbcli insert venue '%s'", j)
 	if err := writeMigration(cmd, "insert_venue_"+*payload.VenueName, migrationsDirectory); err != nil {
 		return types.VenueFeature{}, err
 	}
@@ -422,8 +422,8 @@ func PatchVenueById(c *fuego.ContextWithBody[types.VenueProperties]) (types.Venu
 		slog.Error("PatchVenueById", "id", id, "msg", err)
 		return types.VenueFeature{}, errors.New("an unknown error occured")
 	}
-	cmd := fmt.Sprintf("dbcli update venue %v '%v'", id, string(j))
-	return types.VenueFeature{}, writeMigration(cmd, "update_venue_"+string(id), migrationsDirectory)
+	cmd := fmt.Sprintf("dbcli update venue %v '%s'", id, j)
+	return types.VenueFeature{}, writeMigration(cmd, fmt.Sprintf("update_venue_%v", id), migrationsDirectory)
 }
 
 func DeleteVenueById(c *fuego.ContextNoBody) (types.VenueFeature, error) {
@@ -434,7 +434,7 @@ func DeleteVenueById(c *fuego.ContextNoBody) (types.VenueFeature, error) {
 		return types.VenueFeature{}, fuego.BadRequestError{Detail: fmt.Sprintf("Please provide a numeric ID ('/jamsession/{id}'), got: %v", c.PathParam("id"))}
 	}
 	cmd := fmt.Sprintf("dbcli delete venue %v", id)
-	return types.VenueFeature{}, writeMigration(cmd, "delete_venue_"+string(id), migrationsDirectory)
+	return types.VenueFeature{}, writeMigration(cmd, fmt.Sprintf("delete_venue_%v", id), migrationsDirectory)
 }
 
 // helper func - writes the provided command to a timestamped file in the $MIGRATIONS_DIRECTORY. 'route' is solely for logging purposes.

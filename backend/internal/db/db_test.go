@@ -31,7 +31,7 @@ func setup() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer pool.Close()
+	// defer pool.Close()
 
 	queries = New(pool)
 

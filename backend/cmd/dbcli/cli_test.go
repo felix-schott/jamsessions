@@ -25,6 +25,8 @@ func ptr[T any](t T) *T { return &t }
 
 func TestCli(t *testing.T) {
 
+	migrationsScript := "../../scripts/run-migrations.sh"
+
 	// setup database connection
 	pool, err := dbutils.CreatePool(ctx)
 	if err != nil {
@@ -64,7 +66,7 @@ func TestCli(t *testing.T) {
 
 		// simulate the manual execution of the script - note that if there were multiple tests, each test should have a separate migrationsDirectory for isolation
 		var stderr bytes.Buffer
-		cmd := exec.Command("bash", "../../scripts/run-migrations.sh", "-y")
+		cmd := exec.Command("bash", migrationsScript, "-y")
 		cmd.Env = os.Environ()
 		cmd.Env = append(cmd.Env, "MIGRATIONS_DIRECTORY="+migrationsDirectory)
 		cmd.Env = append(cmd.Env, "MIGRATIONS_ARCHIVE="+migrationsArchive)
@@ -127,7 +129,7 @@ func TestCli(t *testing.T) {
 		// simulate the manual execution of the script - note that if there were multiple tests, each test should have a separate migrationsDirectory for isolation
 		var stderr bytes.Buffer
 		var stdout bytes.Buffer
-		cmd := exec.Command("bash", "./run-migrations.sh", "-y")
+		cmd := exec.Command("bash", migrationsScript, "-y")
 		cmd.Env = os.Environ()
 		cmd.Env = append(cmd.Env, "MIGRATIONS_DIRECTORY="+migrationsDirectory)
 		cmd.Env = append(cmd.Env, "MIGRATIONS_ARCHIVE="+migrationsArchive)
