@@ -13,7 +13,7 @@ internal/db/models.go: internal/db/schema.sql internal/db/query.sql internal/db/
 test-ci: internal/db/models.go bin/dbcli # run in ci pipeline
 	@TEST_DB_PORT=$(TEST_DB_PORT) docker compose up test_db -d
 	@sleep 5 # wait until the database has started up
-	@DB_URL=$(DB_URL) PATH=${PATH}:${CURDIR}/bin go test -json ./internal/db ./internal/geocoding ./cmd/server ./cmd/dbcli
+	@DB_URL=$(DB_URL) PATH=${PATH}:${CURDIR}/bin go test ./internal/db ./internal/geocoding ./cmd/server ./cmd/dbcli
 
 test-db: internal/db/models.go
 	TEST_DB_PORT=$(TEST_DB_PORT) docker compose up test_db -d
