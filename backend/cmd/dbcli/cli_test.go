@@ -135,15 +135,14 @@ func TestCli(t *testing.T) {
 		cmd.Stdout = &stdout
 
 		if err := cmd.Run(); err != nil {
+			if strings.Contains(stderr.String(), "status: 403") {
+				log.Println("Nominatim unavailable (CI runs blocked, skip test)")
+				return
+			}
 			t.Errorf("an error occured when running migrations: %v: %v", err, stderr.String())
 		}
 
 		// log.Println(stderr.String())
-
-		if strings.Contains(stderr.String(), "status: 403") {
-			log.Println("nominatim unavailable (CI runs blocked, skip test)")
-			return
-		}
 
 		// check database for results
 		record, err := queries.GetVenueByName(ctx, "TEST_VENUE")
