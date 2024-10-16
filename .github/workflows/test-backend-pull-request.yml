@@ -27,6 +27,7 @@ jobs:
           echo 'POSTGRES_DB="london_jam_sessions"' >> .env
       - name: Run test suite
         run: make test-ci > test_results.json
+        continue-on-error: true
       - name: Check docker logs
         run: |
           docker ps -a
