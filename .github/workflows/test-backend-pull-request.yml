@@ -19,7 +19,9 @@ jobs:
           go-version: ${{ vars.GO_VERSION }}
           cache-dependency-path: '**/go.sum'
       - name: Install dependencies
-        run: go get ./...
+        run: |
+          go get ./...
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
       - name: Prepare .env for tests
         run: |
           echo 'POSTGRES_PASSWORD="test_password"' > .env
