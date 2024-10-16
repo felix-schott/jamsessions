@@ -8,21 +8,24 @@ on:
 jobs:
   test-backend:
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: './backend'
     steps:
       - uses: actions/checkout@v4
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: ${{ vars.GO_VERSION }}
+          cache-dependency-path: '**/go.sum'
       - name: Install dependencies
-        working-directory: ./backend
-        run: go get .
+        run: |
+          go get ./...
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+      - name: Prepare .env for tests
+        run: |
+          echo 'POSTGRES_PASSWORD="test_password"' > .env
+          echo 'READ_WRITE_PASSWORD="Tq43938!Tq43938!"' >> .env
+          echo 'POSTGRES_DB="london_jam_sessions"' >> .env
       - name: Run test suite
-        working-directory: ./backend
-        run: make test-ci > test_results.json
-      - name: Upload Go test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend_test_results
-          path: backend/test_results.json
+        run: make test-ci

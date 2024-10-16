@@ -9,14 +9,6 @@ export const sessionStyle = new Style({
             scale: 0.4,
         })
     })
-    // new Style({
-    //     image: new RegularShape({
-    //         stroke: new Stroke(), //new Stroke({ color: [0, 0, 0, 0] }),
-    //         points: 50,
-    //         radius: 50, // <--------- control its size
-    //         angle: Math.PI / 4
-    //     })
-    // })]
 
 export const flyTo = (view: View, destination: Coordinate) => {
     const zoom = view.getZoom()!;

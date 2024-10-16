@@ -52,6 +52,7 @@ RUN make bin/server && make bin/healthcheck
 # PROD SERVER
 
 FROM scratch as production
+
 # Add certificates
 RUN apk add --no-cache ca-certificates
 # Copy built binary from builder
