@@ -1,6 +1,7 @@
 services:
   test_db:
     image: postgis/postgis:16-3.4-alpine
+    container_name: jamsessions_test_db
     volumes: # create schema and roles on startup
       - ./internal/db/schema.sql:/docker-entrypoint-initdb.d/001_schema.sql
       - ./internal/db/scripts/add-roles.sh:/docker-entrypoint-initdb.d/002_roles.sh

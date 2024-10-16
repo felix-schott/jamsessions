@@ -27,6 +27,10 @@ jobs:
           echo 'POSTGRES_DB="london_jam_sessions"' >> .env
       - name: Run test suite
         run: make test-ci > test_results.json
+      - name: Check docker logs
+        run: |
+          docker ps -a
+          docker logs jamsessions_test_db
       - name: Upload Go test results
         uses: actions/upload-artifact@v4
         with:
