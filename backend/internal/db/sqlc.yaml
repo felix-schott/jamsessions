@@ -1,0 +1,20 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "query.sql"
+    schema: "schema.sql"
+    gen:
+      go:
+        sql_package: "pgx/v5"
+        emit_json_tags: True
+        emit_pointers_for_null_types: True
+        out: "./"
+        package: "dbutils"
+        overrides:
+          - db_type: "geometry"
+            go_type:
+              import: "github.com/twpayne/go-geom"
+              package: "geom"
+              pointer: True
+              type: Point
+            nullable: True

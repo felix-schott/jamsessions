@@ -1,0 +1,244 @@
+<script lang="ts">
+	import Modal from './Modal.svelte';
+	import type { SessionProperties, VenueProperties } from '../types';
+	import LocationIcon from './icons/LocationIcon.svelte';
+	import ShareIcon from './icons/ShareIcon.svelte';
+	import TimeIcon from './icons/TimeIcon.svelte';
+	import FileTrayIcon from './icons/FileTrayIcon.svelte';
+	import MicrophoneIcon from './icons/MicrophoneIcon.svelte';
+	import EditIcon from './icons/EditIcon.svelte';
+	import EditSession from './EditSessionPopup.svelte';
+	import PlusIcon from './icons/PlusIcon.svelte';
+	import { postCommentForSessionById } from '../api';
+	import { constructIntervalString } from './timeUtils';
+
+	// props
+	export let sessionProperties: SessionProperties;
+	export let venueProperties: VenueProperties;
+
+	// state management
+	let editing: boolean = false;
+	let newCommentHidden: boolean = true;
+
+	let newCommentContent: string;
+
+	// share functionality
+	const onShare = async () => {
+		const shareData = {
+			title: sessionProperties.session_name,
+			text: 'Check out this jam session',
+			url: window.location.href
+		};
+		try {
+			await navigator.share(shareData);
+		} catch (err) {
+			console.log('Could not share:', err);
+		}
+	};
+
+	// event handler
+	const onSubmitNewComment = async () => {
+		try {
+			await postCommentForSessionById(sessionProperties.session_id!, {
+				comment: newCommentContent
+			});
+			alert(
+				'Thanks for submitting a comment! All content is moderated, so please bare with us while we review your comment. If there is anything else, get in touch <a href="mailto:felix.schott@proton.me">via email</a>.'
+			);
+		} catch (e) {
+			alert('An error occured when trying to post a new comment: ' + (e as Error).message);
+			throw e;
+		}
+	};
+
+	const constructTimeString = (properties: SessionProperties) => {
+		// construct "when" string
+		const when =
+			new Date(properties.start_time_utc).toLocaleTimeString([], {
+				hour: '2-digit',
+				minute: '2-digit'
+			}) +
+			' - ' +
+			new Date(
+				new Date(properties.start_time_utc).getTime() + properties!.duration_minutes * 60000
+			).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+		return (
+			when +
+			', ' +
+			constructIntervalString(properties.interval, new Date(properties.start_time_utc))
+		);
+	};
+</script>
+
+<Modal
+	isVisible={() => true}
+	hide={() => {
+		window.location.assign('/');
+	}}
+>
+	{#if !editing}
+		<div>
+			<h2>
+				<!-- https://stackoverflow.com/a/24357132 -->
+				<span class="line">{sessionProperties?.session_name} </span>
+				<span class="line">
+					<ShareIcon
+						style="cursor: pointer; margin-left: 0.3em; vertical-align: middle;"
+						title="Share link to session"
+						on:click={onShare}
+					/>
+					<EditIcon
+						style="cursor: pointer; margin-left: 0.3em; vertical-align: middle;"
+						title="Suggest changes to this page"
+						on:click={() => {
+							editing = true;
+						}}
+					/></span
+				>
+			</h2>
+		</div>
+		<table>
+			<tr>
+				<td><LocationIcon title="Address of venue" class="icon-auto" /></td>
+				<td>
+					<a href={venueProperties?.venue_website} target="_blank">{venueProperties?.venue_name}</a><br />
+					{venueProperties?.address_first_line}<br />
+					{#if venueProperties.address_second_line}
+						{venueProperties?.address_second_line}<br />
+					{/if}
+					{venueProperties?.city}<br />
+					{venueProperties?.postcode}<br />
+					<a target="_blank" href="https://www.google.com/maps/place/{venueProperties.address_first_line.replaceAll(" ", "+")},+{venueProperties.city.replaceAll(" ", "+")}+{venueProperties.postcode.replaceAll(" ", "+")}/">View on Google Maps</a>
+				</td>
+			</tr>
+			<tr>
+				<td><TimeIcon title="Time of event" class="icon-auto" /></td>
+				<td>{constructTimeString(sessionProperties)}</td>
+			</tr>
+			{#if sessionProperties.genres && sessionProperties.genres.length !== 0}
+				<tr>
+					<td><FileTrayIcon title="Primary genre of event" class="icon-auto" /></td>
+					<td>{sessionProperties?.genres.map((i) => i.replace('_', ' ')).join(', ')}</td>
+				</tr>
+			{/if}
+			{#if venueProperties.backline && venueProperties.backline.length !== 0}
+				<tr>
+					<td><MicrophoneIcon title="Backline provided by venue" class="icon-auto" /></td
+					>
+					<td
+						>{venueProperties?.backline
+							.slice(0, -1)
+							.map((i) => i.replace('_', ' '))
+							.join(', ') +
+							' and ' +
+							venueProperties?.backline.slice(-1)[0].replace('_', ' ')}</td
+					>
+				</tr>
+			{/if}
+		</table>
+		<p>
+			{sessionProperties?.description}
+		</p>
+		<p
+			style="border-radius: 6px; padding: 0.5em; background-color: var(--accent-color); margin-bottom: 2em;"
+		>
+			The data may be inaccurate or outdated, and sessions can be cancelled at short notice. Please
+			always check the <a target="_blank" href={sessionProperties?.session_website}>website of the organiser</a>.
+		</p>
+		<hr />
+		<b>Comments</b>
+		<div class="comments">
+			<ul>
+				{#each sessionProperties?.session_comments as comment}
+					<li>
+						<i>{comment}</i>
+					</li>
+				{/each}
+				<div
+					class:horizontal-center={newCommentHidden}
+					style="margin-top: 1em;"
+					class:hidden={!newCommentHidden}
+				>
+					<button
+						title="Add comment"
+						style="display: flex; align-items: center; padding: 0.3em 0.6em; font-size: smaller;"
+						on:click={() => {
+							newCommentHidden = false;
+							console.log(newCommentHidden);
+						}}
+						><PlusIcon
+							title="Add comment"
+							style="cursor: pointer; margin-right: 0.3em;"
+							class="icon-auto"
+						/> Add comment</button
+					>
+				</div>
+				<div
+					style="background-color: lightgrey; border-radius: 10px; padding: 0.5em 1em 1em; margin-top: 1em;"
+					class:hidden={newCommentHidden}
+				>
+					<span
+						title="Close section to add new comment"
+						role="button"
+						style="cursor: pointer; float: right; color: red;"
+						on:click={() => {
+							newCommentHidden = true;
+						}}>×</span
+					>
+					<textarea
+						placeholder="Describe your experience at the jam session and provide useful information for others."
+						bind:value={newCommentContent}
+						id="new-comment"
+						style="width: 100%; margin-top: 1em;"
+					/>
+					<div class="horizontal-center">
+						<button
+							style="font-size: smaller; margin-top: 0.5em; background-color: white; font-color: black;"
+							on:click={onSubmitNewComment}>Submit</button
+						>
+					</div>
+				</div>
+			</ul>
+		</div>
+	{:else}
+		<EditSession properties={sessionProperties} />
+	{/if}
+</Modal>
+
+<style>
+	.horizontal-center {
+		display: flex;
+		justify-content: center;
+	}
+
+	td {
+		vertical-align: top;
+		padding: 0.5em;
+	}
+
+	td:first-child {
+		padding-top: 0.5em;
+	}
+
+	.comments {
+		background-color: whitesmoke;
+		padding: 0.5em;
+		border-radius: 10px;
+		margin-top: 1em;
+	}
+
+	ul {
+		padding-inline-start: 0;
+		margin-block-start: 0;
+	}
+
+	li {
+		list-style-type: none;
+		margin: 0.5em;
+		margin-left: 1em;
+	}
+
+	.line {
+		display: inline-block;
+	}
+</style>
