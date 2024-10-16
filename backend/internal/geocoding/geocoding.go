@@ -41,6 +41,10 @@ type NominatimDownError struct {
 	Body       []byte
 }
 
+func (r NominatimDownError) Error() string {
+	return fmt.Sprintf("Nominatim unavailable (http status: %d, body: %s)", r.StatusCode, r.Body)
+}
+
 func serviceIsHealthy() (bool, NominatimDownError) {
 	resp, err := client.Get("https://nominatim.openstreetmap.org/status")
 	if err != nil {
@@ -52,10 +56,6 @@ func serviceIsHealthy() (bool, NominatimDownError) {
 	}
 	slog.Error("nominatimDown", "status", resp.StatusCode)
 	return resp.StatusCode == 200, NominatimDownError{StatusCode: resp.StatusCode, Body: []byte{}}
-}
-
-func (r NominatimDownError) Error() string {
-	return fmt.Sprintf("status: %d, body: %s", r.StatusCode, r.Body)
 }
 
 func Geocode(street string, city string, postcode string) (*geom.Point, error) {
