@@ -21,7 +21,7 @@ jobs:
         working-directory: ./backend
         run: make bin/dbcli
       - name: Generate changelog
-        run: sed -n '/^## \[${{ github.ref }}\] .*/,/^## .*/{//!p}' > CHANGELOG_${{ github.sha }}.md # extract relevant section from CHANGELOG.md
+        run: sed -n '/^## \[${{ github.ref }}\] .*/,/^## .*/{//!p}' CHANGELOG.md > CHANGELOG_${{ github.sha }}.md # extract relevant section from CHANGELOG.md
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
