@@ -1,35 +1,3 @@
-#################
-#       DEV     #
-#################
-
-ARG GO_VERSION
-
-FROM golang:$GO_VERSION as development
-
-ARG USER
-ARG UID
-
-# Add a work directory
-WORKDIR /app
-# Cache and install dependencies
-COPY go.mod go.sum ./
-RUN go mod download
-
-# create user
-RUN adduser $USER --no-create-home --disabled-password --disabled-login --uid $UID
-
-# Copy app files
-COPY . .
-# install air for hot reload
-RUN go install github.com/air-verse/air@latest
-# Expose port
-EXPOSE 80
-
-USER $USER
-
-# Start app
-CMD air
-
 #####################
 #       PROD        #
 #####################
@@ -63,8 +31,6 @@ FROM scratch as production
 
 ARG USER
 
-# Add certificates
-RUN apk add --no-cache ca-certificates
 # Copy built binary from builder
 COPY --from=builder /app/bin/server /bin/server
 COPY --from=builder /app/bin/healthcheck /bin/healthcheck
@@ -74,6 +40,7 @@ USER $USER
 
 # Expose port
 EXPOSE 80
+
 # Exec built binary
 HEALTHCHECK --interval=1s --timeout=1s --start-period=2s --retries=3 CMD [ "/bin/healthcheck" ]
 CMD [ "/bin/server" ]
