@@ -3,7 +3,13 @@
 	import Modal from './Modal.svelte';
 
 	import { getVenues, postSession } from '../api';
-	import { Backline, Genre, Interval, type SessionProperties, type VenueProperties } from '../types';
+	import {
+		Backline,
+		Genre,
+		Interval,
+		type SessionProperties,
+		type VenueProperties
+	} from '../types';
 	import InfoIcon from './icons/InfoIcon.svelte';
 	import { constructIntervalString, minutesBetweenTimestamps } from './timeUtils';
 
@@ -32,7 +38,6 @@
 
 	const onSubmit = async (ev: MouseEvent) => {
 		ev.preventDefault();
-
 
 		// add venue if necessary
 		if (venueId == 'new-venue') {
@@ -65,8 +70,7 @@
 			};
 		}
 		// add session (with venue if applicable)
-		// try {
-			console.log(sessionDate, sessionTimeStart, sessionTimeFinish)
+		try {
 			let sessionParams: SessionProperties = {
 				session_name: sessionName,
 				description: sessionDescription,
@@ -76,16 +80,17 @@
 				genres: [], // todo
 				session_comments: [],
 				session_website: sessionWebsite
-			}
+			};
 			if (venueParams) {
-				Object.assign(sessionParams, venueParams) // merge venue and session params - postSession can handle a new venue too
+				Object.assign(sessionParams, venueParams); // merge venue and session params - postSession can handle a new venue too
 			}
 			await postSession(sessionParams);
-		// } catch (e) {
-		// 	alert(
-		// 		`An error occured trying to communicate with the server (${e}). Please try again or email felix.schott@proton.me`
-		// 	);
-		// }
+			alert('Thank you for submitting a new session! We\'ll review your suggestions and apply the changes. If there is anything else, you can email felix.schott@proton.me')
+		} catch (e) {
+			alert(
+				`An error occured trying to communicate with the server (${e}). Please try again or email felix.schott@proton.me`
+			);
+		}
 	};
 </script>
 
@@ -118,7 +123,12 @@
 							<b>Add new venue to the database</b>
 						</div>
 						<label for="venue-name"
-							>Name of the venue <input id="venue-name" bind:value={venueName} type="text" required /></label
+							>Name of the venue <input
+								id="venue-name"
+								bind:value={venueName}
+								type="text"
+								required
+							/></label
 						>
 						<label for="venue-address-first-line"
 							>Address 1st line <input
@@ -179,11 +189,22 @@
 				<h3>Session details</h3>
 				<div class="vertical">
 					<label for="session-name"
-						>Name of the session <input id="session-name" bind:value={sessionName} type="text" required /></label
+						>Name of the session <input
+							id="session-name"
+							bind:value={sessionName}
+							type="text"
+							required
+						/></label
 					>
 					<div>
-						<label for="session-date">Next date of the session <input type="date" bind:value={sessionDate} required></label>					
-							<label for="session-time-start"
+						<label for="session-date"
+							>Next date of the session <input
+								type="date"
+								bind:value={sessionDate}
+								required
+							/></label
+						>
+						<label for="session-time-start"
 							>From <input
 								type="time"
 								id="session-time-start"
@@ -208,7 +229,9 @@
 										>{constructIntervalString(interval, new Date(sessionDate))}</option
 									>
 								{:else}
-									<option value={interval}>{constructIntervalString(interval, new Date(sessionDate))}</option>
+									<option value={interval}
+										>{constructIntervalString(interval, new Date(sessionDate))}</option
+									>
 								{/if}
 							{/each}
 						</select>
@@ -228,10 +251,12 @@
 					{#each Object.values(Genre) as genre}
 						{#if genre != 'ANY'}
 							<label for="session-genre-{genre}"
-								><input type="checkbox" class="genre-checkbox" id="session-genre-{genre}" name={genre} />{genre.replace(
-									'_',
-									' '
-								)}</label
+								><input
+									type="checkbox"
+									class="genre-checkbox"
+									id="session-genre-{genre}"
+									name={genre}
+								/>{genre.replace('_', ' ')}</label
 							>
 						{/if}
 					{/each}

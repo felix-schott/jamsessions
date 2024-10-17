@@ -43,7 +43,7 @@
 				alert(
 					'An error occurred when trying to suggest a new address: ' +
 						(e as Error).message +
-						'\nPlease get in touch <a href="mailto:felix.schott@proton.me">via email</a> instead.'
+						'\nPlease get in touch at felix.schott@proton.me instead.'
 				);
 			}
 		}
@@ -55,7 +55,7 @@
 				alert(
 					'An error occurred when trying to suggest that the venue is closed: ' +
 						(e as Error).message +
-						'\nPlease get in touch <a href="mailto:felix.schott@proton.me">via email</a> instead.'
+						'\nPlease get in touch at felix.schott@proton.me instead.'
 				);
 			}
 		}
@@ -79,7 +79,7 @@
 				alert(
 					'An error occurred trying to propose a different time for the session: ' +
 						(e as Error).message +
-						'\nPlease get in touch <a href="mailto:felix.schott@proton.me">via email</a> instead.'
+						'\nPlease get in touch at felix.schott@proton.me instead.'
 				);
 			}
 		}
@@ -91,7 +91,7 @@
 				alert(
 					'An error occurred trying to propose the deletion of the session: ' +
 						(e as Error).message +
-						'\nPlease get in touch <a href="mailto:felix.schott@proton.me">via email</a> instead.'
+						'\nPlease get in touch at felix.schott@proton.me instead.'
 				);
 			}
 		}
@@ -105,12 +105,12 @@
 				alert(
 					'An error occurred trying to submit a change suggestion: ' +
 						(e as Error).message +
-						'\nPlease get in touch <a href="mailto:felix.schott@proton.me">via email</a> instead.'
+						'\nPlease get in touch at felix.schott@proton.me instead.'
 				);
 			}
 		}
 		if (success === true) {
-			alert('Thank you! A member of the admin team will review your suggestions and apply the changes. For other feedback you can also get in touch <a href="mailto:felix.schott@proton.me">via email</a>.')
+			alert('Thank you! A member of the admin team will review your suggestions and apply the changes. For other feedback you can also get in touch at felix.schott@proton.me.')
 		}
 	};
 </script>

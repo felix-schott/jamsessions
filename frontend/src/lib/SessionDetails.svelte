@@ -43,7 +43,7 @@
 				comment: newCommentContent
 			});
 			alert(
-				'Thanks for submitting a comment! All content is moderated, so please bare with us while we review your comment. If there is anything else, get in touch <a href="mailto:felix.schott@proton.me">via email</a>.'
+				'Thanks for submitting a comment! All content is moderated, so please bare with us while we review your comment. If there is anything else, get in touch at felix.schott@proton.me'
 			);
 		} catch (e) {
 			alert('An error occured when trying to post a new comment: ' + (e as Error).message);
