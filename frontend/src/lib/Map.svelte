@@ -17,10 +17,15 @@
 	import { onMount } from 'svelte';
 	import {
 		visibleLayer,
-		selectedSessions,
+		selectedSessions
 		// activeVenueProperties,
 	} from '../stores';
-	import { MapLayer, type SessionProperties, type SessionPropertiesWithVenue, type VenueProperties } from '../types';
+	import {
+		MapLayer,
+		type SessionProperties,
+		type SessionPropertiesWithVenue,
+		type VenueProperties
+	} from '../types';
 	import { flyTo, sessionStyle } from './mapUtils';
 	import SessionPopup from './SessionPopup.svelte';
 	import VenuePopup from './VenuePopup.svelte';
@@ -166,11 +171,9 @@
 	 * */
 	const addPopups = (sessionsByVenue: SessionsByVenue): void => {
 		for (let [_, features] of Object.entries(sessionsByVenue)) {
-
-
 			// TODO one popup for multiple sessions, might have to change SessionPopup
 
-			const propertiesList = features.map(i => i.getProperties());
+			const propertiesList = features.map((i) => i.getProperties());
 			const isSession = 'session_id' in propertiesList[0];
 
 			let elem = document.createElement('div');
@@ -250,11 +253,19 @@
 					map.getOverlays().forEach((i) => map.removeOverlay(i));
 					// show popup
 					if (feature == features[0]) {
-						map.addOverlay(popup); // show popup when feature is clicked
-
-						// zoom to center of popup
-						const rect = elem.getBoundingClientRect();
-						flyTo(view, map.getCoordinateFromPixel([rect.right - (rect.right - rect.left) / 2, rect.top - (rect.top - rect.bottom) / 2]))
+						// fly to the geometry and right zoom level first, then add the popup and center on that
+						// has to be this sequence, as the center of the popup will be different depending on zoom level
+						flyTo(view, feature.getGeometry()?.getExtent()!, () => {
+							map.addOverlay(popup); // show popup when feature is clicked
+							const rect = elem.getBoundingClientRect();
+							flyTo(
+								view,
+								map.getCoordinateFromPixel([
+									rect.right - (rect.right - rect.left) / 2,
+									rect.top - (rect.top - rect.bottom) / 2
+								])
+							);
+						});
 					}
 				});
 			});
