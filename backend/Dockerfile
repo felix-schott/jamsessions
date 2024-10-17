@@ -1,12 +1,14 @@
-ARG GO_VERSION
-ARG USER
-ARG UID
-
 #################
 #       DEV     #
 #################
 
+ARG GO_VERSION
+
 FROM golang:$GO_VERSION as development
+
+ARG USER
+ARG UID
+
 # Add a work directory
 WORKDIR /app
 # Cache and install dependencies
@@ -14,7 +16,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # create user
-RUN adduser $USER -D -g '' -u $UID
+RUN adduser $USER --no-create-home --disabled-password --disabled-login --uid $UID
 
 # Copy app files
 COPY . .
@@ -34,7 +36,13 @@ CMD air
 
 ## BUILDER
 
+ARG GO_VERSION
+
 FROM golang:$GO_VERSION as builder
+
+ARG USER
+ARG UID
+
 # Add a work directory
 WORKDIR /app
 # Cache and install dependencies
@@ -42,7 +50,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # create user - choose UID of host machine user that you want files to be owned by
-RUN adduser $USER -D -g '' -u $UID
+RUN adduser $USER --no-create-home --disabled-password --disabled-login --uid $UID --quiet
 
 # Copy app files
 COPY . .
@@ -52,6 +60,8 @@ RUN make bin/server && make bin/healthcheck
 # PROD SERVER
 
 FROM scratch as production
+
+ARG USER
 
 # Add certificates
 RUN apk add --no-cache ca-certificates
