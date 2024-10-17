@@ -20,6 +20,8 @@ WORKDIR /workspace
 
 RUN API_ADDRESS=${API_ADDRESS} npm ci && npm run build
 
+EXPOSE 80
+
 # final image
 FROM nginx:1.26-alpine3.20 AS production
 COPY --from=builder /workspace/public/ /usr/share/nginx/html

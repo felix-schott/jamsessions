@@ -3,8 +3,9 @@ services:
     image: postgis/postgis:16-3.4-alpine
     container_name: jamsessions_prod_db
     volumes: # create schema and roles on startup
-      - ./backend/internal/db/schema.sql:/docker-entrypoint-initdb.d/001_schema.sql
-      - ./backend/internal/db/scripts/add-roles.sh:/docker-entrypoint-initdb.d/002_roles.sh
+      - ../backend/internal/db/schema.sql:/docker-entrypoint-initdb.d/001_schema.sql
+      - ../backend/internal/db/scripts/add-roles.sh:/docker-entrypoint-initdb.d/002_roles.sh
+      - ./postgres-data:/var/lib/postgresql/data # persist data on disk
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
@@ -38,21 +39,26 @@ services:
       retries: 3
 
   prod_frontend:
-    build:
-      context: frontend
-      target: production
-    image: jamsessions_prod_frontend
+    image: ghcr.io/felix-schott/jamsessions-frontend:latest
     container_name: jamsessions_prod_frontend
-    environment:
-      API_ADDRESS: http://localhost:$PROD_API_PORT
     volumes:
       - "node_modules_jamsessions_prod:/workspace/node_modules"
-    command: ["--", "--host", "0.0.0.0", "--port", "5173"]
-    ports:
-      - "127.0.0.1:$PROD_FRONTEND_PORT:5173"
     restart: unless-stopped
     depends_on:
       - prod_api
 
+  proxy:
+    image: nginx:1.27-alpine3.20
+    volumes:
+      - ./nginx.conf.template:/etc/nginx/templates/default.conf.template
+    environment:
+      API_URL: "prod_api:80"
+      FRONTEND_URL: "prod_frontend:80"
+    ports:
+      - "127.0.0.1:$PROD_PORT:80"
+    restart: unless-stopped
+    depends_on:
+      - dev_frontend
+
 volumes:
-  node_modules_jamsessions_prod:
+  node_modules_jamsessions_prod: # build cache

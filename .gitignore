@@ -1,5 +1,4 @@
 .env
 tiles/
 TODO.md
-
-CHANGELOG.md
+postgres-data/

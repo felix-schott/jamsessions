@@ -211,6 +211,10 @@
 		justify-content: center;
 	}
 
+	table {
+		margin-left: 1em;
+	}
+
 	td {
 		vertical-align: top;
 		padding: 0.5em;

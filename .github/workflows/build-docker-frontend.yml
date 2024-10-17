@@ -49,8 +49,6 @@ jobs:
         with:
           context: ./backend
           target: production
-          build-args: |
-            API_ADDRESS=${{ secrets.API_ADDRESS }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
