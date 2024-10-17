@@ -42,7 +42,7 @@ test-cli: bin/dbcli
 dev-server: 
 	DEV_SERVER_PORT=$(DEV_SERVER_PORT) docker compose up dev_server	
 
-bin/server: main.go handlers.go $(wildcard internal/**/*)
+bin/server: cmd/server/main.go cmd/server/handlers.go $(wildcard internal/**/*)
 	GOOS=linux CGO_ENABLED=0 go build -o ./bin/server ./cmd/server
 
 bin/healthcheck: cmd/healthcheck/healthcheck.go
