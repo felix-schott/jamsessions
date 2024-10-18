@@ -16,7 +16,7 @@ jobs:
           go-version: ${{ vars.GO_VERSION }}
       - name: Install dependencies
         working-directory: ./backend
-        run: go get .
+        run: go get ./...
       - name: Build bin/dbcli
         working-directory: ./backend
         run: make bin/dbcli
