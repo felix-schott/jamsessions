@@ -19,7 +19,7 @@ jobs:
         run: go get ./...
       - name: Build bin/dbcli
         working-directory: ./backend
-        run: make bin/dbcli
+        run: touch .env && make bin/dbcli # makefile requires .env to exist
       - name: Generate changelog
         run: sed -n '/^## \[${{ github.ref }}\] .*/,/^## .*/{//!p}' CHANGELOG.md > CHANGELOG_${{ github.sha }}.md # extract relevant section from CHANGELOG.md
       - name: Release
