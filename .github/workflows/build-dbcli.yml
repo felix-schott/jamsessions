@@ -20,10 +20,11 @@ jobs:
       - name: Build bin/dbcli
         working-directory: ./backend
         run: touch .env && make bin/dbcli # makefile requires .env to exist
-      - name: Generate changelog
-        run: sed -n '/^## \[${{ github.ref }}\] .*/,/^## .*/{//!p}' CHANGELOG.md > CHANGELOG_${{ github.sha }}.md # extract relevant section from CHANGELOG.md
+      # - name: Generate changelog
+      #  run: sed -n '/^## \[${{ github.ref }}\] .*/,/^## .*/{//!p}' CHANGELOG.md > CHANGELOG_${{ github.sha }}.md # extract relevant section from CHANGELOG.md
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           files: ./backend/bin/dbcli
-          body_path: CHANGELOG_${{ github.sha }}.md
+          body: See CHANGELOG.md
+          # body_path: CHANGELOG_${{ github.sha }}.md
