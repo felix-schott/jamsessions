@@ -22,7 +22,7 @@ services:
     image: ghcr.io/felix-schott/jamsessions-server:latest
     container_name: jamsessions_prod_api
     volumes:
-      - "/home/$PROD_USER/migrations:/app/migrations"
+      - "$PWD/migrations:/app/migrations"
     environment:
       DB_URL: "host=prod_db port=5432 user=read_write password=${READ_WRITE_PASSWORD} dbname=${POSTGRES_DB} sslmode=disable"
       MIGRATIONS_DIRECTORY: /app/migrations

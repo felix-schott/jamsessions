@@ -1,9 +1,19 @@
 #!/usr/bin/env bash
 
-# applies all changes in $MIGRATIONS_DIRECTORY and moves the scripts to the archive afterwards
+# applies all changes in $MIGRATIONS_DIRECTORY and moves the scripts to 
+# the archive ($MIGRATIONS_ARCHIVE) afterwards.
 # use -y flag for non-interactive mode
 
+# if you're not running this script as part of the production setup (see deploy/install.sh)
+# make sure the dbcli binary is on your PATH
+
 set -euo pipefail
+
+# load .env file if it exists
+[[ ! -f .env ]] || export $(grep -v '^#' .env | xargs)
+
+# if there is a local bin directory (normal production setup), add to PATH
+[[ -d "$PWD/bin" ]] && export PATH=$PATH:$PWD/bin
 
 [[ $MIGRATIONS_DIRECTORY == "" ]] && echo "Please provide the environment variable 'MIGRATIONS_DIRECTORY'" 1>&2 && exit 1;
 
