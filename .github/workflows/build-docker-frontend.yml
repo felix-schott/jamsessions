@@ -1,4 +1,4 @@
-name: Build and release backend docker image when tag is created
+name: Build and release frontend docker image when tag is created
 
 on:
   push:
@@ -47,7 +47,7 @@ jobs:
         id: push
         uses: docker/build-push-action@v6
         with:
-          context: ./backend
+          context: ./frontend
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
