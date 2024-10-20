@@ -23,7 +23,6 @@ services:
     build:
       context: backend
       dockerfile: Dockerfile.dev
-      target: development
       args:
         GO_VERSION: 1.23
         USER: $DEV_USER
@@ -50,7 +49,7 @@ services:
   dev_frontend:
     build:
       context: frontend
-      target: development
+      dockerfile: Dockerfile.dev
     image: jamsessions_dev_frontend
     container_name: jamsessions_dev_frontend
     # environment:
