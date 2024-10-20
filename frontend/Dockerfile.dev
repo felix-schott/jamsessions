@@ -3,7 +3,7 @@
 FROM node:20.17.0-alpine3.20 AS development
 
 COPY . /workspace
-# RUN cd workspace && npm ci && npm run build
+
 WORKDIR /workspace
 RUN npm i && API_ADDRESS=${API_ADDRESS} npm run build
 
