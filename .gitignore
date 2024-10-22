@@ -2,3 +2,5 @@
 tiles/
 TODO.md
 postgres-data/
+caddy-data/
+caddy-data-dev/
