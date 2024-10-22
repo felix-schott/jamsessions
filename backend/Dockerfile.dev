@@ -6,23 +6,17 @@ ARG GO_VERSION
 
 FROM golang:$GO_VERSION AS development
 
-ARG USER
-ARG UID
-
 # Add a work directory
 WORKDIR /app
 # Cache and install dependencies
 COPY go.mod go.sum ./
 RUN go mod download
 
-# create user
-RUN adduser $USER --no-create-home --disabled-password --disabled-login --uid $UID
-
 # Copy app files
 COPY . .
 
 # install air for hot reload
-RUN make bin/healthcheck && go install github.com/air-verse/air@latest
+RUN go install github.com/air-verse/air@latest
 # Expose port
 EXPOSE 80
 

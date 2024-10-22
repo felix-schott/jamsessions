@@ -38,6 +38,8 @@ First, make sure there is a .env file present in $directory that contains the fo
 - READ_ONLY_PASSWORD (password for read-only db user)
 - READ_WRITE_PASSWORD (password for rw db user)
 - POSTGRES_DB (name of the database)
+- PROD_UID (host uid that you want files in volumes to be owned by)
+- PROD_GID (group id of image user)
 
 If you wish, you can modify the docker-compose.yml file according to your needs. Note that running the default docker-compose won't work
 if you're not the project owner, and you will have to build your own production docker images.
