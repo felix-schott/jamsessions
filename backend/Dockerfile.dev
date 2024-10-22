@@ -4,7 +4,7 @@
 
 ARG GO_VERSION
 
-FROM golang:$GO_VERSION as development
+FROM golang:$GO_VERSION AS development
 
 ARG USER
 ARG UID
@@ -20,12 +20,13 @@ RUN adduser $USER --no-create-home --disabled-password --disabled-login --uid $U
 
 # Copy app files
 COPY . .
+
 # install air for hot reload
-RUN go install github.com/air-verse/air@latest
+RUN make bin/healthcheck && go install github.com/air-verse/air@latest
 # Expose port
 EXPOSE 80
 
-USER $USER
+ENV GOCACHE /app/tmp/.cache
 
 # Start app
-CMD air
+CMD air --build.cmd "go build -o ./bin/server ./cmd/server" --build.bin "./bin/server"

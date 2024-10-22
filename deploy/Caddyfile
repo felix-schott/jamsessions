@@ -1,0 +1,16 @@
+{
+    admin 0.0.0.0:2019 # since we're running this in a container, binding to localhost won't make it accessible from the outside
+    servers {
+        metrics
+    }
+}
+
+{$HOST} {
+    handle_path /api/* {
+        reverse_proxy {$API_URL}
+    }
+    
+    handle_path /* {
+        reverse_proxy {$FRONTEND_URL}
+    }
+}

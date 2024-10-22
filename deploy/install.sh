@@ -23,8 +23,11 @@ wget -q -O $directory/run-migrations.sh "https://raw.githubusercontent.com/felix
 echo "Downloading production docker compose file"
 wget -q -O $directory/docker-compose.yml "https://raw.githubusercontent.com/felix-schott/jamsessions/refs/tags/$tag/deploy/prod.docker-compose.yml"
 
-echo "Download nginx config"
-wget -q -O $directory/nginx.conf.template "https://raw.githubusercontent.com/felix-schott/jamsessions/refs/tags/$tag/deploy/nginx.conf.template"
+echo "Downloading Caddyfile"
+wget -q -O $directory/Caddyfile "https://raw.githubusercontent.com/felix-schott/jamsessions/refs/tags/$tag/deploy/Caddyfile"
+
+echo "Downloading prometheus.yml"
+wget -q -O $directory/prometheus.yml "https://raw.githubusercontent.com/felix-schott/jamsessions/refs/tags/$tag/deploy/prometheus.yml"
 
 echo "Creating readme file with instructions"
 cat << EOF > $directory/README.md
@@ -35,7 +38,6 @@ First, make sure there is a .env file present in $directory that contains the fo
 - READ_ONLY_PASSWORD (password for read-only db user)
 - READ_WRITE_PASSWORD (password for rw db user)
 - POSTGRES_DB (name of the database)
-- PROD_PORT (localhost port to expose the api and frontend at - to expose to public network, remove 127.0.0.1 from the docker compose port mapping)
 
 If you wish, you can modify the docker-compose.yml file according to your needs. Note that running the default docker-compose won't work
 if you're not the project owner, and you will have to build your own production docker images.

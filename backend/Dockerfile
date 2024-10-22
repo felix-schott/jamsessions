@@ -6,7 +6,7 @@
 
 ARG GO_VERSION
 
-FROM golang:$GO_VERSION as builder
+FROM golang:$GO_VERSION AS builder
 
 ARG USER
 ARG UID
@@ -27,7 +27,7 @@ RUN make bin/server && make bin/healthcheck
 
 # PROD SERVER
 
-FROM scratch as production
+FROM scratch AS production
 
 ARG USER
 
