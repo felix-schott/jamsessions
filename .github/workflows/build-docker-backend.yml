@@ -54,8 +54,6 @@ jobs:
           context: ./backend
           build-args: |
             GO_VERSION=${{ env.GO_VERSION }}
-            USER=${{ secrets.USER }}
-            UID=${{ secrets.UID }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

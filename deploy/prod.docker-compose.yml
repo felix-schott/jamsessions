@@ -20,6 +20,7 @@ services:
 
   prod_api:
     image: ghcr.io/felix-schott/jamsessions-server:latest
+    user: $PROD_UID:$PROD_GID
     container_name: jamsessions_prod_api
     volumes:
       - "$PWD/migrations:/app/migrations"

@@ -25,9 +25,8 @@ services:
       dockerfile: Dockerfile.dev
       args:
         GO_VERSION: 1.23
-        USER: $DEV_USER
-        UID: $DEV_UID
     image: jamsessions_dev_api
+    user: $DEV_UID:$DEV_GID
     container_name: jamsessions_dev_api
     volumes:
       - "./backend:/app"
