@@ -6,7 +6,7 @@ services:
     volumes: # create schema and roles on startup
       - ./backend/internal/db/schema.sql:/docker-entrypoint-initdb.d/001_schema.sql
       - ./backend/internal/db/scripts/add-roles.sh:/docker-entrypoint-initdb.d/002_roles.sh
-      - ./backend/internal/db/scripts/add-test-data.sql:/docker-entrypoint-initdb.d/003_data.sql
+    #  - ./backend/internal/db/scripts/add-test-data.sql:/docker-entrypoint-initdb.d/003_data.sql
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
@@ -50,7 +50,7 @@ services:
     image: jamsessions_dev_frontend
     container_name: jamsessions_dev_frontend
     volumes:
-      - "./frontend:/workspace"
+      - "./frontend/src:/workspace/src"
       - "jamsessions_node_modules_dev:/workspace/node_modules"
     command: ["--", "--host", "0.0.0.0", "--port", "5173"]
     restart: unless-stopped
