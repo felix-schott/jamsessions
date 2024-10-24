@@ -32,9 +32,23 @@
 
 	let venueParams: VenueProperties;
 
-	$: newVenueHidden = venueId != 'new-venue';
+	let venuesLoaded: boolean = false;
+
+	$: newVenueHidden = venueId != 'new-venue' && venuesLoaded;
 	$: buttonDisabled =
 		!sessionName && !sessionTimeStart && !sessionTimeFinish && !sessionDescription;
+
+	// small wrapper around getVenues for better state management 
+	// (venuesLoaded controls whether the menu to add a venue is shown)
+	const getVenuesContext = async () => {
+		const venues = await getVenues();
+		if (venues && venues.features) {
+			venuesLoaded = true;
+			return venues
+		}
+		venuesLoaded = false;
+		return []
+	}
 
 	const onSubmit = async (ev: MouseEvent) => {
 		ev.preventDefault();
@@ -86,6 +100,7 @@
 			}
 			await postSession(sessionParams);
 			alert('Thank you for submitting a new session! We\'ll review your suggestions and apply the changes. If there is anything else, you can email felix.schott@proton.me')
+			$addSessionPopupVisible = false;
 		} catch (e) {
 			alert(
 				`An error occured trying to communicate with the server (${e}). Please try again or email felix.schott@proton.me`
@@ -94,7 +109,7 @@
 	};
 </script>
 
-{#await getVenues() then venues}
+{#await getVenuesContext() then venues}
 	<Modal
 		isVisible={() => $addSessionPopupVisible}
 		hide={() => {
@@ -105,6 +120,7 @@
 			<h2>Add new session to the database</h2>
 			<div class="card">
 				<h3>Venue</h3>
+				{#if venuesLoaded}
 				<select title="Select venue" bind:value={venueId}>
 					{#each venues.features as venue, idx}
 						{#if idx === 0}
@@ -117,6 +133,7 @@
 					{/each}
 					<option value="new-venue">None of the above</option>
 				</select>
+				{/if}
 				<div class:hidden={newVenueHidden} style="margin-top: 1em;">
 					<div class="vertical">
 						<div style="justify-content: center; display: flex; margin-top: 1em;">
