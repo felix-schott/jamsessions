@@ -38,12 +38,16 @@ wget -q -O $directory/prometheus.yml "https://raw.githubusercontent.com/felix-sc
 [[ ! -f $directory/.env ]] && {
     echo ".env doesn't exist yet - creating file and default directories"
     touch $directory/.env
-    echo "POSTGRES_DATA_DIR=$directory/postgres-data" > $directory/.env
+    echo "RELEASE_TAG=$tag" > $directory/.env
+    echo "POSTGRES_DATA_DIR=$directory/postgres-data" >> $directory/.env
     echo "PROD_UID=$UID" >> $directory/.env
     echo "PROD_GID=$UID" >> $directory/.env
     mkdir -p $directory/postgres-data
     mkdir -p $directory/migrations/suggestions
     mkdir -p $directory/migrations/archive
+} || {
+    echo ".env already exists - overwriting RELEASE_TAG"
+    sed -i "s/RELEASE_TAG.*/RELEASE_TAG=$tag/g" $directory/.env
 }
 
 echo "Creating readme file with instructions"

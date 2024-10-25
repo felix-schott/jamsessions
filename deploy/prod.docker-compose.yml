@@ -18,7 +18,7 @@ services:
       retries: 3
 
   prod_api:
-    image: ghcr.io/felix-schott/jamsessions-server:latest
+    image: ghcr.io/felix-schott/jamsessions-server:$RELEASE_TAG
     user: $PROD_UID:$PROD_GID
     container_name: jamsessions_prod_api
     volumes:
@@ -37,7 +37,7 @@ services:
       retries: 3
 
   prod_frontend:
-    image: ghcr.io/felix-schott/jamsessions-frontend:latest
+    image: ghcr.io/felix-schott/jamsessions-frontend:RELEASE_TAG
     container_name: jamsessions_prod_frontend
     volumes:
       - "node_modules_jamsessions_prod:/workspace/node_modules"
