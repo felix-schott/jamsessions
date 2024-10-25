@@ -327,7 +327,9 @@ func PatchSessionById(c *fuego.ContextWithBody[types.SessionProperties]) (types.
 }
 
 type CommentBody struct {
-	Comment string
+	Session *int   `json:"session"`
+	Author  string `json:"author"`
+	Content string `json:"content"`
 }
 
 func PostCommentForSessionById(c *fuego.ContextWithBody[CommentBody]) (types.SessionFeature[types.SessionProperties], error) {
@@ -336,20 +338,17 @@ func PostCommentForSessionById(c *fuego.ContextWithBody[CommentBody]) (types.Ses
 	if err != nil {
 		return types.SessionFeature[types.SessionProperties]{}, fuego.BadRequestError{Detail: fmt.Sprintf("Please provide a numeric ID ('/jamsession/{id}'), got: %v", c.PathParam("id"))}
 	}
-	res, err := queries.GetSessionById(ctx, int32(id))
+	payload, err := c.Body()
 	if err != nil {
 		return types.SessionFeature[types.SessionProperties]{}, err
 	}
-	body, err := c.Body()
+	payload.Session = ptr(id)
+	j, err := json.Marshal(payload)
 	if err != nil {
 		return types.SessionFeature[types.SessionProperties]{}, err
 	}
-	newComments := append(res.SessionComments, body.Comment)
-	for i, c := range newComments {
-		newComments[i] = `"` + c + `"`
-	}
-	cmd := fmt.Sprintf(`dbcli update session %v '{"session_comments": [%v]}'`, id, strings.Join(newComments, ", "))
-	if err := writeMigration(cmd, fmt.Sprintf("update_session_%v_add_comment", id), migrationsDirectory); err != nil {
+	cmd := fmt.Sprintf("dbcli insert comment '%s'", j)
+	if err := writeMigration(cmd, fmt.Sprintf("insert_comment_session_%v", id), migrationsDirectory); err != nil {
 		return types.SessionFeature[types.SessionProperties]{}, err
 	}
 	c.SetStatus(201)
@@ -370,8 +369,22 @@ func PostSuggestionsForSessionById(c *fuego.ContextWithBody[CommentBody]) (types
 
 	fp := filepath.Join(suggestionsDirectory, fmt.Sprintf("%v_session_%v", time.Now().Format(time.RFC3339), (id)))
 	slog.Info("writing suggestion", "filepath", fp)
-	os.WriteFile(fp, []byte(fmt.Sprintf("Session %v: %v", id, body.Comment)), fs.FileMode(int(0755)))
+	os.WriteFile(fp, []byte(fmt.Sprintf("Session %v: %v", id, body)), fs.FileMode(int(0755)))
 	return types.SessionFeature[types.SessionProperties]{}, nil
+}
+
+func GetCommentsBySessionId(c *fuego.ContextNoBody) ([]dbutils.GetCommentsBySessionIdRow, error) {
+	slog.Info("GetCommentsBySessionId", "id", c.PathParam("id"))
+	id, err := strconv.Atoi(c.PathParam("id"))
+	if err != nil {
+		return []dbutils.GetCommentsBySessionIdRow{}, fuego.BadRequestError{Detail: fmt.Sprintf("Please provide a numeric ID ('/jamsession/{id}/comments'), got: %v", c.PathParam("id"))}
+	}
+	res, err := queries.GetCommentsBySessionId(ctx, int32(id))
+	if err != nil {
+		slog.Error("GetCommentsBySessionId", "id", id, "err", err)
+		return []dbutils.GetCommentsBySessionIdRow{}, errors.New("an unknown error occured")
+	}
+	return res, nil
 }
 
 func DeleteSessionById(c *fuego.ContextNoBody) (types.SessionFeature[types.SessionProperties], error) {

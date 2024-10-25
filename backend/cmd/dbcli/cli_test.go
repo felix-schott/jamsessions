@@ -17,6 +17,7 @@ import (
 
 	dbutils "github.com/felix-schott/london-jam-sessions/internal/db"
 	"github.com/felix-schott/london-jam-sessions/internal/types"
+	"github.com/jackc/pgx/v5/pgtype"
 	geom "github.com/twpayne/go-geom"
 )
 
@@ -50,6 +51,19 @@ func TestCli(t *testing.T) {
 	})
 	if err != nil {
 		t.Errorf("the following error occurred when trying to insert a Venue record: %v", err)
+		t.FailNow()
+	}
+
+	testSessionId, err := queries.InsertJamSession(ctx, dbutils.InsertJamSessionParams{
+		SessionName:     "TEST_SESSION_12345",
+		Venue:           testVenueId,
+		Description:     "...",
+		StartTimeUtc:    pgtype.Timestamptz{Time: time.Date(2024, 5, 6, 7, 6, 5, 4, time.UTC), Valid: true},
+		DurationMinutes: 30,
+		Interval:        "Weekly",
+	})
+	if err != nil {
+		t.Errorf("the following error occurred when trying to insert a session record: %v", err)
 		t.FailNow()
 	}
 
@@ -124,7 +138,7 @@ func TestCli(t *testing.T) {
 			t.Errorf("could not write to file %v: %v", fp, err)
 		}
 
-		// simulate the manual execution of the script - note that if there were multiple tests, each test should have a separate migrationsDirectory for isolation
+		// simulate the manual execution of the script
 		var stderr bytes.Buffer
 		var stdout bytes.Buffer
 		cmd := exec.Command("bash", migrationsScript, "-y")
@@ -158,12 +172,58 @@ func TestCli(t *testing.T) {
 		if err != nil {
 			t.Errorf("could not parse stdout as session id: %v", err)
 		}
+
+		// check db
 		rec, err := queries.GetSessionById(ctx, int32(sessionId))
 		if err != nil {
-			t.Errorf("error when retrieving inserted session record")
+			t.Error("error when retrieving inserted session record:", err)
 		}
 		if rec.SessionName != "TEST_SESSION" {
 			t.Errorf("name of inserted session (%v) doesn't match TEST_SESSION", rec.SessionName)
+		}
+	})
+
+	t.Run("InsertComment", func(t *testing.T) {
+		// temporary directory for testing
+		migrationsDirectory := t.TempDir()
+		migrationsArchive := filepath.Join(migrationsDirectory, "/archive")
+
+		testCommentJson, err := json.Marshal(dbutils.InsertSessionCommentParams{
+			Session: testSessionId,
+			Author:  "test author",
+			Content: "This is a comment.",
+		})
+		if err != nil {
+			t.Error("Couldn't marshal json", err)
+			t.FailNow()
+		}
+
+		fp := filepath.Join(migrationsDirectory, "InsertComment.sh")
+		if err := os.WriteFile(fp, []byte(fmt.Sprintf(`dbcli insert comment '%s';`, testCommentJson)), fs.FileMode(int(0755))); err != nil {
+			t.Errorf("could not write to file %v: %v", fp, err)
+		}
+
+		// run migrations
+		var stderr bytes.Buffer
+		var stdout bytes.Buffer
+		cmd := exec.Command("bash", migrationsScript, "-y")
+		cmd.Env = os.Environ()
+		cmd.Env = append(cmd.Env, "MIGRATIONS_DIRECTORY="+migrationsDirectory)
+		cmd.Env = append(cmd.Env, "MIGRATIONS_ARCHIVE="+migrationsArchive)
+		cmd.Stderr = &stderr
+		cmd.Stdout = &stdout
+
+		if err := cmd.Run(); err != nil {
+			t.Errorf("an error occured when running migrations: %v: %v", err, stderr.String())
+		}
+
+		// check db
+		rec, err := queries.GetCommentsBySessionId(ctx, testSessionId)
+		if err != nil {
+			t.Error("error when retrieving inserted session record:", err)
+		}
+		if rec[0].Author != "test author" {
+			t.Errorf("name of inserted comment author (%v) doesn't match 'test author'", rec[0].Author)
 		}
 	})
 }

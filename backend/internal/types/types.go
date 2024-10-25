@@ -37,7 +37,6 @@ type SessionProperties struct {
 	StartTimeUtc    *time.Time `json:"start_time_utc,omitempty"`
 	Interval        *string    `json:"interval,omitempty"`
 	DurationMinutes *int16     `json:"duration_minutes,omitempty"`
-	SessionComments *[]string  `json:"session_comments,omitempty"`
 	SessionWebsite  *string    `json:"session_website,omitempty"`
 	DtUpdatedUtc    *time.Time `json:"dt_updated_utc,omitempty"`
 }

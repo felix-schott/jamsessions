@@ -47,10 +47,34 @@ CREATE TABLE london_jam_sessions.jamsessions (
     interval VARCHAR(13) NOT NULL CHECK (interval IN ('Once', 'Daily', 'Weekly', 'FirstOfMonth', 'SecondOfMonth', 'ThirdOfMonth', 'FourthOfMonth', 'LastOfMonth')),
     duration_minutes SMALLINT NOT NULL,
     description TEXT NOT NULL,
-    session_comments TEXT[],
 	session_website VARCHAR(2000),
     dt_updated_utc TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'utc'),
     UNIQUE (venue, start_time_utc, interval) -- unique time and venue
 );
 -- create indices
 CREATE INDEX jamsessions_venue_fkey_idx ON london_jam_sessions.jamsessions (venue);
+
+-- TABLE london_jam_sessions.comments
+
+CREATE TABLE london_jam_sessions.comments (
+    comment_id SERIAL PRIMARY KEY,
+    session INTEGER NOT NULL REFERENCES london_jam_sessions.jamsessions(session_id),
+    author VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    dt_posted TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'utc')
+);
+-- create indices
+CREATE INDEX comments_session_fkey_idx ON london_jam_sessions.comments (session);
+
+-- TABLE london_jam_sessions.ratings
+
+CREATE TABLE london_jam_sessions.ratings (
+    rating_id SERIAL PRIMARY KEY,
+    session INTEGER NOT NULL REFERENCES london_jam_sessions.jamsessions(session_id),
+    comment INTEGER REFERENCES london_jam_sessions.comments(comment_id), --optionally link to comment
+    rating SMALLINT CHECK(rating < 6 AND rating > 0), -- 1 to 5
+    dt_posted TIMESTAMPTZ DEFAULT (NOW() AT TIME ZONE 'utc')
+);
+-- create indices
+CREATE INDEX ratings_session_fkey_idx ON london_jam_sessions.ratings (session);
+CREATE INDEX ratings_comment_fkey_idx ON london_jam_sessions.ratings (comment);

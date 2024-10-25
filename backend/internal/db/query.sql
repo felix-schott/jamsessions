@@ -19,14 +19,23 @@ SELECT public.ST_AsGeoJSON(t.*) FROM t;
 SELECT * FROM london_jam_sessions.venues
 WHERE venue_name = $1;
 
+-- name: GetCommentsBySessionId :many
+SELECT c.*, r.rating FROM london_jam_sessions.comments c
+LEFT OUTER JOIN london_jam_sessions.ratings r ON c.comment_id = r.rating_id
+WHERE c.session = $1;
+
 -- name: GetAllSessions :many
-SELECT * FROM london_jam_sessions.jamsessions s
-JOIN london_jam_sessions.venues l ON s.venue = l.venue_id;
+SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
+LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
+GROUP BY s.session_id, l.venue_id;
 
 -- name: GetAllSessionsAsGeoJSON :one
 WITH t AS (
-    SELECT * FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
+    LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
+    GROUP BY s.session_id, l.venue_id
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -34,22 +43,27 @@ SELECT json_build_object(
 ) FROM t;
 
 -- name: GetSessionById :one
-SELECT * FROM london_jam_sessions.jamsessions s
+SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
 JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
-WHERE s.session_id = $1;
+LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
+WHERE s.session_id = $1
+GROUP BY s.session_id, l.venue_id;
 
 -- name: GetSessionByIdAsGeoJSON :one
 WITH t AS (
-    SELECT * FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
+    LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.session_id = $1
+    GROUP BY s.session_id, l.venue_id
 )
 SELECT public.ST_AsGeoJSON(t.*) FROM t;
 
 -- name: GetSessionsByDateAsGeoJSON :one
 WITH t AS (
-    SELECT * FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
+    LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE interval = 'Daily' 
     OR (
         start_time_utc::date = sqlc.arg(date)::date
@@ -84,6 +98,7 @@ WITH t AS (
     OR interval = 'LastOfMonth' AND (
         EXTRACT(MONTH FROM sqlc.arg(date) + 7) != EXTRACT(MONTH FROM sqlc.arg(date)) 
     )
+    GROUP BY s.session_id, l.venue_id
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -92,9 +107,11 @@ SELECT json_build_object(
 
 -- name: GetSessionsByBacklineAsGeoJSON :one
 WITH t AS (
-    SELECT * FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
+    LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE l.backline @> $1
+    GROUP BY s.session_id, l.venue_id
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -103,9 +120,11 @@ SELECT json_build_object(
 
 -- name: GetSessionsByGenreAsGeoJSON :one
 WITH t AS (
-    SELECT * FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
+    LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> $1
+    GROUP BY s.session_id, l.venue_id
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -114,8 +133,9 @@ SELECT json_build_object(
 
 -- name: GetSessionsByDateAndGenreAsGeoJSON :one
 WITH t AS (
-    SELECT * FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
+    LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> sqlc.arg(genres) 
     AND interval = 'Daily'
     OR (
@@ -151,6 +171,7 @@ WITH t AS (
     OR interval = 'LastOfMonth' AND (
         EXTRACT(MONTH FROM sqlc.arg(date) + 7) != EXTRACT(MONTH FROM sqlc.arg(date)) 
     )
+    GROUP BY s.session_id, l.venue_id
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -159,8 +180,9 @@ SELECT json_build_object(
 
 -- name: GetSessionsByDateAndBacklineAsGeoJSON :one
 WITH t AS (
-    SELECT * FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
+    LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE l.backline @> sqlc.arg(backline)
     AND interval = 'Daily'
     OR (
@@ -196,6 +218,7 @@ WITH t AS (
     OR interval = 'LastOfMonth' AND (
         EXTRACT(MONTH FROM sqlc.arg(date) + 7) != EXTRACT(MONTH FROM sqlc.arg(date)) 
     )
+    GROUP BY s.session_id, l.venue_id
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -204,8 +227,9 @@ SELECT json_build_object(
 
 -- name: GetSessionsByDateAndGenreAndBacklineAsGeoJSON :one
 WITH t AS (
-    SELECT * FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
+    LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> sqlc.arg(genres)
     AND l.backline @> sqlc.arg(backline)
     AND interval = 'Daily'
@@ -242,6 +266,7 @@ WITH t AS (
     OR interval = 'LastOfMonth' AND (
         EXTRACT(MONTH FROM sqlc.arg(date) + 7) != EXTRACT(MONTH FROM sqlc.arg(date)) 
     )
+    GROUP BY s.session_id,l.venue_id
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -250,10 +275,12 @@ SELECT json_build_object(
 
 -- name: GetSessionsByGenreAndBacklineAsGeoJSON :one
 WITH t AS (
-    SELECT * FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
+    LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> sqlc.arg(genres)
     AND l.backline @> sqlc.arg(backline)
+    GROUP BY s.session_id, l.venue_id
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -280,49 +307,12 @@ SET -- see https://docs.sqlc.dev/en/latest/howto/named_parameters.html#nullable-
     backline = coalesce(sqlc.narg(backline), backline),
     venue_comments = coalesce(sqlc.narg(venue_comments), venue_comments)
 WHERE venue_id = $1;
--- SET venue_name = CASE WHEN sqlc.arg(set_venue_name)::bool
---         THEN sqlc.arg(venue_name)
---         ELSE venue_name
---         END,
---     address_first_line = CASE WHEN sqlc.arg(set_address_first_line)::bool
---         THEN sqlc.arg(address_first_line)
---         ELSE address_first_line
---         END, 
---     address_second_line = CASE WHEN sqlc.arg(set_address_second_line)::bool
---         THEN sqlc.arg(address_second_line)
---         ELSE address_second_line
---         END, 
---     city = CASE WHEN sqlc.arg(set_city)::bool
---         THEN sqlc.arg(city)
---         ELSE city
---         END, 
---     postcode = CASE WHEN sqlc.arg(set_postcode)::bool
---         THEN sqlc.arg(postcode)
---         ELSE postcode
---         END,
---     geom = CASE WHEN sqlc.arg(set_geom)::bool
---         THEN sqlc.arg(geom)
---         ELSE geom
---         END, 
---     venue_website = CASE WHEN sqlc.arg(set_venue_website)::bool
---         THEN sqlc.arg(venue_website)
---         ELSE venue_website
---         END,  
---     backline = CASE WHEN sqlc.arg(set_backline)::bool
---         THEN sqlc.arg(backline)
---         ELSE backline
---         END,  
---     venue_comments = CASE WHEN sqlc.arg(set_venue_comments)::bool
---         THEN sqlc.arg(venue_comments)
---         ELSE venue_comments
---         END
--- WHERE venue_id = $1;
 
 -- name: InsertJamSession :one
 INSERT INTO london_jam_sessions.jamsessions (
-    session_name, venue, description, genres, start_time_utc, interval, duration_minutes, session_website, session_comments
+    session_name, venue, description, genres, start_time_utc, interval, duration_minutes, session_website
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9
+    $1, $2, $3, $4, $5, $6, $7, $8
 ) RETURNING session_id;
 
 -- name: UpdateJamSessionById :exec
@@ -334,43 +324,22 @@ SET
     start_time_utc = coalesce(sqlc.narg(start_time_utc), start_time_utc),
     interval = coalesce(sqlc.narg(interval), interval),
     duration_minutes = coalesce(sqlc.narg(duration_minutes), duration_minutes),
-    session_website = coalesce(sqlc.narg(session_website), session_website),
-    session_comments = coalesce(sqlc.narg(session_comments), session_comments)
+    session_website = coalesce(sqlc.narg(session_website), session_website)
 WHERE session_id = $1;
 
--- SET session_name = CASE WHEN sqlc.arg(set_session_name)::bool
---         THEN sqlc.arg(session_name)
---         ELSE session_name
---         END,
---     description = CASE WHEN sqlc.arg(set_description)::bool
---         THEN sqlc.arg(description)
---         ELSE description
---         END,
---     genres = CASE WHEN sqlc.arg(set_genres)::bool
---         THEN sqlc.arg(genres)
---         ELSE genres
---         END,
---     start_time_utc = CASE WHEN sqlc.arg(set_start_time_utc)::bool
---         THEN sqlc.arg(start_time_utc)
---         ELSE start_time_utc
---         END,
---     interval = CASE WHEN sqlc.arg(set_interval)::bool
---         THEN sqlc.arg(interval)
---         ELSE interval
---         END,
---     duration_minutes = CASE WHEN sqlc.arg(set_duration_minutes)::bool
---         THEN sqlc.arg(duration_minutes)
---         ELSE duration_minutes
---         END, 
---     session_website = CASE WHEN sqlc.arg(set_session_website)::bool
---         THEN sqlc.arg(session_website)
---         ELSE session_website
---         END,
---     session_comments = CASE WHEN sqlc.arg(set_session_comments)::bool
---         THEN sqlc.arg(session_comments)
---         ELSE session_comments
---         END 
--- WHERE session_id = $1;
+-- name: InsertSessionComment :one
+INSERT INTO london_jam_sessions.comments (
+    session, author, content
+) VALUES (
+    $1, $2, $3
+) RETURNING comment_id;
+
+-- name: InsertSessionRating :one
+INSERT INTO london_jam_sessions.ratings (
+    session, rating, comment
+) VALUES (
+    $1, $2, $3
+) RETURNING rating_id;
 
 -- name: DeleteJamSessionById :exec
 DELETE FROM london_jam_sessions.jamsessions
