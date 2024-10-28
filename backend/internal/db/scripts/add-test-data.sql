@@ -1,5 +1,6 @@
 DO $$
 DECLARE inserted_venue INTEGER;
+DECLARE inserted_session INTEGER;
 BEGIN
     -- insert venue, store ID in variable 'inserted_venue'
     INSERT INTO london_jam_sessions.venues (
@@ -10,14 +11,26 @@ BEGIN
 
     -- insert sessions, use 'inserted_venue' as fkey
     INSERT INTO london_jam_sessions.jamsessions (
-        session_name, venue, description, start_time_utc, duration_minutes, interval, session_website, genres, session_comments
+        session_name, venue, description, start_time_utc, duration_minutes, interval, session_website, genres
     ) VALUES (
-        'Jazz comments Jazz Jam', inserted_venue, 'House band plays first set. Free entry.', '2024-08-25T14:00:00Z', 180, 'Weekly', 'https://www.spiceoflifesoho.com/events/different-planet-presents-jazz-comments-jazz-jam-6/', '{Straight-Ahead_Jazz}', '{House band plays 1st hour,Sign up for jam at door}'
+        'Jazz Jam', inserted_venue, 'House band plays first set. Free entry.', '2024-08-25T14:00:00Z', 180, 'Weekly', 'https://www.spiceoflifesoho.com/events/different-planet-presents-jazz-comments-jazz-jam-6/', '{Straight-Ahead_Jazz}'
     );
 
     INSERT INTO london_jam_sessions.jamsessions (
-        session_name, venue, description, start_time_utc, duration_minutes, interval, session_website, genres, session_comments
+        session_name, venue, description, start_time_utc, duration_minutes, interval, session_website, genres
     ) VALUES (
-        'Daily Jam Placeholder', inserted_venue, 'House band plays first set. Free entry.', '2024-08-25T19:00:00Z', 120, 'Daily', 'https://www.spiceoflifesoho.com/events/different-planet-presents-jazz-comments-jazz-jam-6/', '{Straight-Ahead_Jazz,Blues}', '{Lorem ipsum dolor sit amet,Consectetur adipiscing elit,Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua}'
+        'Daily Jam Placeholder', inserted_venue, 'House band plays first set. Free entry.', '2024-08-25T19:00:00Z', 120, 'Daily', 'https://www.spiceoflifesoho.com/events/different-planet-presents-jazz-comments-jazz-jam-6/', '{Straight-Ahead_Jazz,Blues}'
+    ) RETURNING session_id INTO inserted_session;
+
+    INSERT INTO london_jam_sessions.comments (
+        author, content, session
+    ) VALUES (
+        'John Doe', 'House band plays 1st hour, sign up for jam at door', inserted_session
+    );
+
+    INSERT INTO london_jam_sessions.ratings (
+        session, rating
+    ) VALUES (
+        inserted_session, 3
     );
 END $$;

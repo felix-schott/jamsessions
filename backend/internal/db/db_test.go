@@ -22,7 +22,7 @@ var fixtureSessionId int32
 func TestMain(m *testing.M) {
 	setup()
 	code := m.Run()
-	teardown()
+	// teardown() // we use an ephemeral testing database (see Makefile) - no need for teardown
 	os.Exit(code)
 }
 
@@ -68,7 +68,7 @@ func teardown() {
 	if fixtureSessionId != 0 {
 		err := queries.DeleteVenueByJamSessionId(ctx, fixtureSessionId)
 		if err != nil {
-			log.Fatalf("could not delete location previously inserted for session id %v", fixtureSessionId)
+			log.Fatalf("could not delete venue previously inserted for session id %v: %v", fixtureSessionId, err)
 		}
 		err = queries.DeleteJamSessionById(ctx, fixtureSessionId)
 		if err != nil {
@@ -109,6 +109,23 @@ func insertSession(locationName string, houseNumber uint8, startMinute int) (int
 		return 0, fmt.Errorf("the following error occured when trying to insert a Jamsession record: %v", err)
 	}
 
+	// insert two ratings
+	_, err = queries.InsertSessionRating(ctx, InsertSessionRatingParams{
+		Session: sessionId,
+		Rating:  ptr(int16(5)),
+	})
+	if err != nil {
+		return 0, fmt.Errorf("the following error occurred when trying to insert a rating: %v", err)
+	}
+
+	_, err = queries.InsertSessionRating(ctx, InsertSessionRatingParams{
+		Session: sessionId,
+		Rating:  ptr(int16(1)),
+	})
+	if err != nil {
+		return 0, fmt.Errorf("the following error occurred when trying to insert a rating: %v", err)
+	}
+
 	return sessionId, nil
 }
 
@@ -133,6 +150,10 @@ func TestInsertJamsession(t *testing.T) {
 	if !(time.Now().UTC().Add(time.Minute*-1).Before(result.DtUpdatedUtc.Time) && time.Now().UTC().After(result.DtUpdatedUtc.Time)) {
 		t.Errorf("expected dt_updated_utc to point to a value within the last minute before execution time of this statement, got %v (now: %v)", result.DtUpdatedUtc.Time, time.Now().UTC())
 	}
+
+	if result.Rating != 3 {
+		t.Errorf("expected the rating to be the average of {1,5} = 3, got %v", result.Rating)
+	}
 }
 
 func TestGetAllSessionsAsGeoJSON(t *testing.T) {
@@ -145,7 +166,6 @@ func TestGetAllSessionsAsGeoJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to unmarshal json query result: %v", err)
 	}
-	fmt.Println(geojson)
 	if len(geojson.Features) == 0 {
 		t.Error("expected at least one feature to be included in return")
 	}
@@ -171,5 +191,23 @@ func TestGetSessionsByIdAsGeoJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to unmarshal json query result: %v", err)
 	}
-	fmt.Println(geojson)
+}
+
+func TestInsertAndRetrieveComment(t *testing.T) {
+	insertedCommentId, err := queries.InsertSessionComment(ctx, InsertSessionCommentParams{
+		Session: fixtureSessionId,
+		Author:  "foo",
+		Content: "Example comment foo bar.",
+	})
+	if err != nil {
+		t.Errorf("failed to insert session: %v", err)
+	}
+
+	result, err := queries.GetCommentsBySessionId(ctx, insertedCommentId)
+	if err != nil {
+		t.Errorf("failed to retrieve comments by session id: %v", err)
+	}
+	if result[0].Author != "foo" {
+		t.Errorf("expected returned author to match the inserted comment record")
+	}
 }

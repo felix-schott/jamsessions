@@ -1,26 +1,33 @@
 <script lang="ts">
 	import Modal from './Modal.svelte';
-	import type { SessionProperties, VenueProperties } from '../types';
+	import type { SessionComment, SessionProperties, VenueProperties } from '../types';
 	import LocationIcon from './icons/LocationIcon.svelte';
 	import ShareIcon from './icons/ShareIcon.svelte';
 	import TimeIcon from './icons/TimeIcon.svelte';
 	import FileTrayIcon from './icons/FileTrayIcon.svelte';
 	import MicrophoneIcon from './icons/MicrophoneIcon.svelte';
 	import EditIcon from './icons/EditIcon.svelte';
+	import Rating from './Rating.svelte';
 	import EditSession from './EditSessionPopup.svelte';
 	import PlusIcon from './icons/PlusIcon.svelte';
 	import { postCommentForSessionById } from '../api';
 	import { constructIntervalString } from './timeUtils';
+	import InfoIcon from './icons/InfoIcon.svelte';
+	import SelectRating from './SelectRating.svelte';
+	import ArrowLeftIcon from './icons/ArrowLeftIcon.svelte';
 
 	// props
 	export let sessionProperties: SessionProperties;
 	export let venueProperties: VenueProperties;
+	export let sessionComments: SessionComment[];
 
 	// state management
 	let editing: boolean = false;
 	let newCommentHidden: boolean = true;
 
 	let newCommentContent: string;
+	let newCommentAuthor: string;
+	let newRating: number = 0;
 
 	// share functionality
 	const onShare = async () => {
@@ -40,11 +47,13 @@
 	const onSubmitNewComment = async () => {
 		try {
 			await postCommentForSessionById(sessionProperties.session_id!, {
-				comment: newCommentContent
+				author: newCommentAuthor,
+				content: newCommentContent
 			});
 			alert(
 				'Thanks for submitting a comment! All content is moderated, so please bare with us while we review your comment. If there is anything else, get in touch at felix.schott@proton.me'
 			);
+			editing = false;
 		} catch (e) {
 			alert('An error occured when trying to post a new comment: ' + (e as Error).message);
 			throw e;
@@ -76,6 +85,20 @@
 		window.location.assign('/');
 	}}
 >
+	<div slot="bottom-left">
+		{#if editing}
+			<button class="arrow-back"
+				><ArrowLeftIcon
+					title="Go back to session overview"
+					height="1.5em"
+					width="1.5em"
+					on:click={() => {
+						editing = false;
+					}}
+				/>
+			</button>
+		{/if}
+	</div>
 	{#if !editing}
 		<div>
 			<h2>
@@ -101,14 +124,24 @@
 			<tr>
 				<td><LocationIcon title="Address of venue" class="icon-auto" /></td>
 				<td>
-					<a href={venueProperties?.venue_website} target="_blank">{venueProperties?.venue_name}</a><br />
+					<a href={venueProperties?.venue_website} target="_blank">{venueProperties?.venue_name}</a
+					><br />
 					{venueProperties?.address_first_line}<br />
 					{#if venueProperties.address_second_line}
 						{venueProperties?.address_second_line}<br />
 					{/if}
 					{venueProperties?.city}<br />
 					{venueProperties?.postcode}<br />
-					<a target="_blank" href="https://www.google.com/maps/place/{venueProperties.address_first_line.replaceAll(" ", "+")},+{venueProperties.city.replaceAll(" ", "+")}+{venueProperties.postcode.replaceAll(" ", "+")}/">View on Google Maps</a>
+					<a
+						target="_blank"
+						href="https://www.google.com/maps/place/{venueProperties.address_first_line.replaceAll(
+							' ',
+							'+'
+						)},+{venueProperties.city.replaceAll(' ', '+')}+{venueProperties.postcode.replaceAll(
+							' ',
+							'+'
+						)}/">View on Google Maps</a
+					>
 				</td>
 			</tr>
 			<tr>
@@ -123,8 +156,7 @@
 			{/if}
 			{#if venueProperties.backline && venueProperties.backline.length !== 0}
 				<tr>
-					<td><MicrophoneIcon title="Backline provided by venue" class="icon-auto" /></td
-					>
+					<td><MicrophoneIcon title="Backline provided by venue" class="icon-auto" /></td>
 					<td
 						>{venueProperties?.backline
 							.slice(0, -1)
@@ -143,15 +175,32 @@
 			style="border-radius: 6px; padding: 0.5em; background-color: var(--accent-color); margin-bottom: 2em;"
 		>
 			The data may be inaccurate or outdated, and sessions can be cancelled at short notice. Please
-			always check the <a target="_blank" href={sessionProperties?.session_website}>website of the organiser</a>.
+			always check the <a target="_blank" href={sessionProperties?.session_website}
+				>website of the organiser</a
+			>.
 		</p>
 		<hr />
-		<b>Comments</b>
+		<div style="display: flex; align-items: center; margin-top: 0.3em;">
+			<b style="font-size: larger;">Community voices</b>
+			<Rating
+				size="1.2em"
+				style="margin-left: 0.5em;"
+				n={sessionProperties.rating ? sessionProperties.rating : 0}
+			/>
+		</div>
 		<div class="comments">
 			<ul>
-				{#each sessionProperties?.session_comments as comment}
+				{#each sessionComments as comment}
 					<li>
-						<i>{comment}</i>
+						<span
+							><Rating style="margin-right: 0.3em;" n={comment.rating ? comment.rating : 0} /></span
+						>
+						<span>{comment.content}</span>
+						<span
+							><i>
+								&mdash; {comment.author}, {new Date(comment.dt_posted).toLocaleDateString()}</i
+							></span
+						>
 					</li>
 				{/each}
 				<div
@@ -164,7 +213,6 @@
 						style="display: flex; align-items: center; padding: 0.3em 0.6em; font-size: smaller;"
 						on:click={() => {
 							newCommentHidden = false;
-							console.log(newCommentHidden);
 						}}
 						><PlusIcon
 							title="Add comment"
@@ -177,20 +225,44 @@
 					style="background-color: lightgrey; border-radius: 10px; padding: 0.5em 1em 1em; margin-top: 1em;"
 					class:hidden={newCommentHidden}
 				>
+					<span style="display: inline-flex; margin-top: 0.7em;"><b>Add comment</b></span>
 					<span
-						title="Close section to add new comment"
+						title="Close new comment section"
 						role="button"
 						style="cursor: pointer; float: right; color: red;"
 						on:click={() => {
 							newCommentHidden = true;
 						}}>×</span
 					>
+					<p style="font-size: smaller;">
+						If you want to report inaccurate data instead, please <span
+							on:click={() => {
+								editing = true;
+							}}
+							style="color: #646cff; cursor: pointer;
+	">click here</span
+						> instead.
+					</p>
 					<textarea
 						placeholder="Describe your experience at the jam session and provide useful information for others."
 						bind:value={newCommentContent}
 						id="new-comment"
-						style="width: 100%; margin-top: 1em;"
+						style="width: 100%; height: 3em; margin-top: 1em;"
 					/>
+					<div style="margin-top: 0.5em; display: flex; align-items: center;">
+						Rate your experience: <SelectRating
+							style="margin-left: 0.3em;"
+							on:change={(ev) => {
+								newRating = ev.detail.rating;
+							}}
+						/>
+					</div>
+					<label style="display: flex; align-items: center; margin-top: 0.5em;"
+						>Your name: <InfoIcon
+							style="margin-right: 0.3em;"
+							title="This is the name that appears next to your comment - it can be your first name, your nickname or however you wish to present."
+						/><input bind:value={newCommentAuthor} id="new-comment-author" type="text" /></label
+					>
 					<div class="horizontal-center">
 						<button
 							style="font-size: smaller; margin-top: 0.5em; background-color: white; font-color: black;"
@@ -231,6 +303,19 @@
 		margin-top: 1em;
 	}
 
+	.arrow-back {
+		background: none; 
+		padding: 2.5em;
+		margin-left: 2em;
+	}
+
+	@media (max-width: 480px) {
+		.arrow-back {
+			padding: 1.5em;
+			margin-left: 0;
+		}
+	}
+
 	ul {
 		padding-inline-start: 0;
 		margin-block-start: 0;
@@ -240,6 +325,19 @@
 		list-style-type: none;
 		margin: 0.5em;
 		margin-left: 1em;
+		display: flex;
+		align-items: center;
+	}
+
+	@media (max-width: 480px) {
+		li {
+			flex-direction: column;
+			align-items: unset;
+		}
+
+		li span:not(:first-child) {
+			margin-top: 0.2em;
+		}
 	}
 
 	.line {

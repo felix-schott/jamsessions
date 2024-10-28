@@ -137,6 +137,30 @@ func main() {
 			}
 			log.Printf("Inserted record with ID %v into table session\n", newId)
 			fmt.Print(newId) // write new id to stdout
+		case "comment":
+			log.Println("Inserting record into table comments")
+			var payload dbutils.InsertSessionCommentParams
+			if err := json.Unmarshal([]byte(args.Insert.Payload), &payload); err != nil {
+				p.Fail(fmt.Sprintf("couldn't parse payload with the following error: %v", err))
+			}
+			newId, err := queries.InsertSessionComment(ctx, payload)
+			if err != nil {
+				log.Fatalf("failed to run query: %v", err)
+			}
+			log.Printf("Inserted record with ID %v into table comments\n", newId)
+			fmt.Print(newId) // write new id to stdout
+		case "rating":
+			log.Println("Inserting record into table ratings")
+			var payload dbutils.InsertSessionRatingParams
+			if err := json.Unmarshal([]byte(args.Insert.Payload), &payload); err != nil {
+				p.Fail(fmt.Sprintf("couldn't parse payload with the following error: %v", err))
+			}
+			newId, err := queries.InsertSessionRating(ctx, payload)
+			if err != nil {
+				log.Fatalf("failed to run query: %v", err)
+			}
+			log.Printf("Inserted record with ID %v into table ratings\n", newId)
+			fmt.Print(newId) // write new id to stdout
 		default:
 			p.Fail(fmt.Sprintf("available tables: 'venue' or 'session', got %v", args.Insert.Table))
 		}

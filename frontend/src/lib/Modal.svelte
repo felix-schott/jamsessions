@@ -19,7 +19,13 @@
 	<div class="blurry-background" />
 	<div class="popup-pane" id="outside-popup" on:click={checkClick}>
 		<div class="popup">
-			<WindowControlButton class={window.matchMedia('(max-width: 480px)').matches ? "mobile-close-btn" : ""} type="close" on:click={hide} />
+			<WindowControlButton type="close" on:click={hide} />
+			<div class="top-left">
+				<slot name="top-left" />
+			</div>
+			<div class="bottom-left">
+				<slot name="bottom-left" />
+			</div>
 			<div class="modal-content">
 				<slot />
 			</div>
@@ -30,11 +36,6 @@
 <!-- on:click={() => dispatch('close')} /> -->
 
 <style>
-	:global(.mobile-close-btn) {
-		top: 0.2em !important;
-		right: 0.2em !important;
-	}
-
 	.blurry-background {
 		z-index: 800000001;
 		/*
@@ -50,6 +51,35 @@
 		height: 100%;
 		width: 100%;
 	}
+
+	.top-left {
+		position: absolute;
+		top: 0.7em;
+		left: 0.7em;
+		z-index: 800000000;
+	}
+
+	@media (max-width: 480px) {
+		.top-left {
+			top: 0.2em;
+			left: 0.2em;
+		}
+	}
+
+	.bottom-left {
+		position: absolute;
+		bottom: 0.7em;
+		left: 0.7em;
+		z-index: 800000000;
+	}
+
+	@media (max-width: 480px) {
+		.bottom-left {
+			bottom: 0.2em;
+			left: 0.2em;
+		}
+	}
+
 
 	.popup-pane {
 		z-index: 800000002;
@@ -90,7 +120,7 @@
 		.modal-content {
 			max-width: 80vw;
 			max-height: 80vh;
-            font-size: smaller;
+			font-size: smaller;
 		}
 	}
 </style>

@@ -1,4 +1,4 @@
-import { Backline, Genre, type SessionWithVenueFeatureCollection, type VenuesFeatureCollection, type SessionWithVenueFeature, type VenueFeature, type VenueProperties, type SessionProperties, type SessionPropertiesWithVenue } from "./types";
+import { Backline, Genre, type SessionWithVenueFeatureCollection, type SessionComment, type VenuesFeatureCollection, type SessionWithVenueFeature, type VenueFeature, type VenueProperties, type SessionProperties, type SessionPropertiesWithVenue } from "./types";
 
 const API_ROOT = process.env.API_ADDRESS.replace("/\/$/", "");
 const API_VERSION = "v1";
@@ -68,8 +68,19 @@ export const getVenueById = async (id: number): Promise<VenueFeature> => {
     }
 }
 
+export const getCommentsBySessionId = async (id: number): Promise<SessionComment[]> => {
+    let response = await fetch(API_ADDRESS + "/jamsessions/" + id + "/comments")
+    if (!response.ok) {
+        throw new Error((await response.json() as ErrorResponse)["detail"])
+    } else {
+        return await response.json() as SessionComment[];
+    }
+}
+
 interface CommentBody {
-    comment: string
+    session?: number
+    author?: string
+    content: string
 }
 
 export const postCommentForSessionById = async (id: number, payload: CommentBody) => {

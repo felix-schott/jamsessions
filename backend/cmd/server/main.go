@@ -97,8 +97,7 @@ func main() {
 
 	fuego.Post(v1, "/jamsessions/{id}/suggestions", PostSuggestionsForSessionById).Summary("Post feedback/suggest changes for a session by ID")
 
+	fuego.Get(v1, "/jamsessions/{id}/comments", GetCommentsBySessionId).Summary("Get all comments for a session by ID")
+
 	s.Run()
 }
-
-// POST "/jamsessions"
-// // add new entry (should be added to needs_qc table)

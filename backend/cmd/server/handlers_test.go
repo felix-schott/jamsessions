@@ -303,7 +303,7 @@ func TestHandlers(t *testing.T) {
 		testComment := "Test comment number 123!"
 
 		handler := fuego.HTTPHandler(s, PostCommentForSessionById)
-		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/jamsessions/%v/comments", testSession1Id), strings.NewReader(fmt.Sprintf(`{"comment": "%v"}`, testComment)))
+		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/jamsessions/%v/comments", testSession1Id), strings.NewReader(fmt.Sprintf(`{"content": "%v"}`, testComment)))
 		req.SetPathValue("id", fmt.Sprint(testSession1Id))
 		w := httptest.NewRecorder()
 		handler(w, req)
@@ -327,13 +327,13 @@ func TestHandlers(t *testing.T) {
 			t.Errorf("error reading file: %v", err)
 		}
 
-		matched, err := regexp.Match(fmt.Sprintf(`update session %v '\{"session_comments": \[".*\"]\}'`, testSession1Id), f)
+		matched, err := regexp.Match(fmt.Sprintf(`.*dbcli insert comment '\{"session":%v,.*"content":"%v"\}'`, testSession1Id, testComment), f)
 		if err != nil {
 			t.Errorf("error when trying match with regex: %v", err)
 		}
 
 		if !matched {
-			t.Errorf("expected the regex to match. instead got file contents: %v", f)
+			t.Errorf("expected the regex to match. instead got file contents: %s", f)
 		}
 		// see internal/db/cli for cli tests
 	})
@@ -454,7 +454,7 @@ func TestHandlers(t *testing.T) {
 		// temp directory for migrations
 		migrationsDirectory = t.TempDir()
 
-		testBody := `{"session_name":"TEST session 123","description":"dafdsc dsd.","interval":"Weekly","start_time_utc":"2024-10-16T00:00:00.000Z","duration_minutes":60,"genres":[],"session_comments":[],"session_website":"https://example.org/"}`
+		testBody := `{"session_name":"TEST session 123","description":"dafdsc dsd.","interval":"Weekly","start_time_utc":"2024-10-16T00:00:00.000Z","duration_minutes":60,"genres":[],"session_website":"https://example.org/"}`
 
 		handler := fuego.HTTPHandler(s, PostSession)
 		req := httptest.NewRequest(http.MethodPost, "/jamsessions", strings.NewReader(testBody))
