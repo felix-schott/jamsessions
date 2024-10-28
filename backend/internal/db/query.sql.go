@@ -44,7 +44,7 @@ func (q *Queries) DeleteVenueByJamSessionId(ctx context.Context, sessionID int32
 }
 
 const getAllSessions = `-- name: GetAllSessions :many
-SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0)::real AS rating FROM london_jam_sessions.jamsessions s
 JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
 LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
 GROUP BY s.session_id, l.venue_id
@@ -72,7 +72,7 @@ type GetAllSessionsRow struct {
 	Backline          []string           `json:"backline"`
 	VenueComments     []string           `json:"venue_comments"`
 	VenueDtUpdatedUtc pgtype.Timestamptz `json:"venue_dt_updated_utc"`
-	Rating            interface{}        `json:"rating"`
+	Rating            float32            `json:"rating"`
 }
 
 func (q *Queries) GetAllSessions(ctx context.Context) ([]GetAllSessionsRow, error) {
@@ -120,7 +120,7 @@ func (q *Queries) GetAllSessions(ctx context.Context) ([]GetAllSessionsRow, erro
 
 const getAllSessionsAsGeoJSON = `-- name: GetAllSessionsAsGeoJSON :one
 WITH t AS (
-    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0)::real AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     GROUP BY s.session_id, l.venue_id
@@ -195,7 +195,7 @@ func (q *Queries) GetCommentsBySessionId(ctx context.Context, session int32) ([]
 }
 
 const getSessionById = `-- name: GetSessionById :one
-SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
 JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
 LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
 WHERE s.session_id = $1
@@ -224,7 +224,7 @@ type GetSessionByIdRow struct {
 	Backline          []string           `json:"backline"`
 	VenueComments     []string           `json:"venue_comments"`
 	VenueDtUpdatedUtc pgtype.Timestamptz `json:"venue_dt_updated_utc"`
-	Rating            interface{}        `json:"rating"`
+	Rating            float32            `json:"rating"`
 }
 
 func (q *Queries) GetSessionById(ctx context.Context, sessionID int32) (GetSessionByIdRow, error) {
@@ -259,7 +259,7 @@ func (q *Queries) GetSessionById(ctx context.Context, sessionID int32) (GetSessi
 
 const getSessionByIdAsGeoJSON = `-- name: GetSessionByIdAsGeoJSON :one
 WITH t AS (
-    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.session_id = $1
@@ -277,7 +277,7 @@ func (q *Queries) GetSessionByIdAsGeoJSON(ctx context.Context, sessionID int32) 
 
 const getSessionsByBacklineAsGeoJSON = `-- name: GetSessionsByBacklineAsGeoJSON :one
 WITH t AS (
-    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE l.backline @> $1
@@ -298,7 +298,7 @@ func (q *Queries) GetSessionsByBacklineAsGeoJSON(ctx context.Context, backline [
 
 const getSessionsByDateAndBacklineAsGeoJSON = `-- name: GetSessionsByDateAndBacklineAsGeoJSON :one
 WITH t AS (
-    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE l.backline @> $1
@@ -358,7 +358,7 @@ func (q *Queries) GetSessionsByDateAndBacklineAsGeoJSON(ctx context.Context, arg
 
 const getSessionsByDateAndGenreAndBacklineAsGeoJSON = `-- name: GetSessionsByDateAndGenreAndBacklineAsGeoJSON :one
 WITH t AS (
-    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> $1
@@ -420,7 +420,7 @@ func (q *Queries) GetSessionsByDateAndGenreAndBacklineAsGeoJSON(ctx context.Cont
 
 const getSessionsByDateAndGenreAsGeoJSON = `-- name: GetSessionsByDateAndGenreAsGeoJSON :one
 WITH t AS (
-    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> $1 
@@ -480,7 +480,7 @@ func (q *Queries) GetSessionsByDateAndGenreAsGeoJSON(ctx context.Context, arg Ge
 
 const getSessionsByDateAsGeoJSON = `-- name: GetSessionsByDateAsGeoJSON :one
 WITH t AS (
-    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE interval = 'Daily' 
@@ -534,7 +534,7 @@ func (q *Queries) GetSessionsByDateAsGeoJSON(ctx context.Context, date pgtype.Da
 
 const getSessionsByGenreAndBacklineAsGeoJSON = `-- name: GetSessionsByGenreAndBacklineAsGeoJSON :one
 WITH t AS (
-    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> $1
@@ -561,7 +561,7 @@ func (q *Queries) GetSessionsByGenreAndBacklineAsGeoJSON(ctx context.Context, ar
 
 const getSessionsByGenreAsGeoJSON = `-- name: GetSessionsByGenreAsGeoJSON :one
 WITH t AS (
-    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> $1

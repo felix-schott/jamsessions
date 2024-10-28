@@ -25,14 +25,14 @@ LEFT OUTER JOIN london_jam_sessions.ratings r ON c.comment_id = r.rating_id
 WHERE c.session = $1;
 
 -- name: GetAllSessions :many
-SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0)::real AS rating FROM london_jam_sessions.jamsessions s
 JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
 LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
 GROUP BY s.session_id, l.venue_id;
 
 -- name: GetAllSessionsAsGeoJSON :one
 WITH t AS (
-    SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0)::real AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     GROUP BY s.session_id, l.venue_id
@@ -43,7 +43,7 @@ SELECT json_build_object(
 ) FROM t;
 
 -- name: GetSessionById :one
-SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
 JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
 LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
 WHERE s.session_id = $1
@@ -51,7 +51,7 @@ GROUP BY s.session_id, l.venue_id;
 
 -- name: GetSessionByIdAsGeoJSON :one
 WITH t AS (
-    SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.session_id = $1
@@ -61,7 +61,7 @@ SELECT public.ST_AsGeoJSON(t.*) FROM t;
 
 -- name: GetSessionsByDateAsGeoJSON :one
 WITH t AS (
-    SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE interval = 'Daily' 
@@ -107,7 +107,7 @@ SELECT json_build_object(
 
 -- name: GetSessionsByBacklineAsGeoJSON :one
 WITH t AS (
-    SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE l.backline @> $1
@@ -120,7 +120,7 @@ SELECT json_build_object(
 
 -- name: GetSessionsByGenreAsGeoJSON :one
 WITH t AS (
-    SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> $1
@@ -133,7 +133,7 @@ SELECT json_build_object(
 
 -- name: GetSessionsByDateAndGenreAsGeoJSON :one
 WITH t AS (
-    SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> sqlc.arg(genres) 
@@ -180,7 +180,7 @@ SELECT json_build_object(
 
 -- name: GetSessionsByDateAndBacklineAsGeoJSON :one
 WITH t AS (
-    SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE l.backline @> sqlc.arg(backline)
@@ -227,7 +227,7 @@ SELECT json_build_object(
 
 -- name: GetSessionsByDateAndGenreAndBacklineAsGeoJSON :one
 WITH t AS (
-    SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> sqlc.arg(genres)
@@ -275,7 +275,7 @@ SELECT json_build_object(
 
 -- name: GetSessionsByGenreAndBacklineAsGeoJSON :one
 WITH t AS (
-    SELECT s.*, l.*, coalesce(avg(rating), 0) AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> sqlc.arg(genres)
