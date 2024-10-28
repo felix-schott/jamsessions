@@ -39,6 +39,7 @@ type SessionProperties struct {
 	DurationMinutes *int16     `json:"duration_minutes,omitempty"`
 	SessionWebsite  *string    `json:"session_website,omitempty"`
 	DtUpdatedUtc    *time.Time `json:"dt_updated_utc,omitempty"`
+	Rating          *float32   `json:"rating,omitempty"`
 }
 
 type SessionPropertiesWithVenue struct {

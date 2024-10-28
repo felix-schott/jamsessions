@@ -48,4 +48,11 @@
         font-weight: bolder;
         z-index: 800000000;
     }
+
+    @media (max-width: 480px) {
+        .window-control-button {
+            top: 0.2em;
+            right: 0.2em;
+        }
+	}
 </style>

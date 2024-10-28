@@ -1,16 +1,17 @@
 <script lang="ts">
     import SessionDetails from "../../lib/SessionDetails.svelte";
-    import type { SessionFeature, VenueFeature } from "../../types";
-    import { getSessionById, getVenueById } from "../../api";
+    import type { SessionComment, SessionFeature, VenueFeature } from "../../types";
+    import { getCommentsBySessionId, getSessionById, getVenueById } from "../../api";
     import type { SessionSlugData } from "./+page.js";
 
     export let data: SessionSlugData;
 
-    const getSessionByIdWithErrorHandling = async (): Promise<[SessionFeature, VenueFeature]> => {
+    const getSessionByIdWithErrorHandling = async (): Promise<[SessionFeature, VenueFeature, SessionComment[]]> => {
         try {
             let sessionProperties = await getSessionById(data.sessionId);
             let venueProperties = await getVenueById(sessionProperties.properties.venue!);
-            return [sessionProperties, venueProperties]
+            let comments = await getCommentsBySessionId(data.sessionId);
+            return [sessionProperties, venueProperties, comments] 
         } catch (e) {
             alert("An error occured when waiting for data from the server: " + (e as Error).message)
             throw e
@@ -19,5 +20,5 @@
 </script>
 
 {#await getSessionByIdWithErrorHandling() then p}
-    <SessionDetails venueProperties={p[1].properties} sessionProperties={p[0].properties} />
+    <SessionDetails venueProperties={p[1].properties} sessionComments={p[2]} sessionProperties={p[0].properties} />
 {/await}

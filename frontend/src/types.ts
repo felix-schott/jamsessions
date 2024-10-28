@@ -66,7 +66,17 @@ export interface SessionProperties {
 	duration_minutes: number
 	session_comments: string[]
 	session_website: string
+	rating?: number
 	dt_updated_utc?: Date
+}
+
+export interface SessionComment {
+	comment_id: number
+	session: number
+	author: string
+	content: string            
+	dt_posted: string	
+	rating: number // between 1 and 5
 }
 
 export interface SessionPropertiesWithVenue extends SessionProperties, VenueProperties {};

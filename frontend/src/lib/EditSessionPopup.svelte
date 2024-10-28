@@ -98,7 +98,7 @@
 		if (otherChanges) {
 			try {
 				await postSuggestionForSessionById(properties.session_id!, {
-					comment: (document.getElementById('other-suggestions') as HTMLTextAreaElement).value
+					content: (document.getElementById('other-suggestions') as HTMLTextAreaElement).value
 				});
 			} catch (e) {
 				success = false;
