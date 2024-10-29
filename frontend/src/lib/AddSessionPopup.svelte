@@ -91,7 +91,9 @@
 				interval: sessionInterval,
 				start_time_utc: new Date(sessionDate).toISOString(),
 				duration_minutes: minutesBetweenTimestamps(sessionTimeStart, sessionTimeFinish),
-				genres: [], // todo
+				genres: Array.from(document.querySelectorAll('.genre-checkbox:checked')).map(
+					(i) => i.id.replace('session-genre-', '') as Genre
+				),
 				session_comments: [],
 				session_website: sessionWebsite
 			};
@@ -326,22 +328,6 @@
 		.vertical label {
 			display: inline-block;
 		}
-	}
-
-	.checkboxes {
-		display: flex;
-		flex-direction: column;
-		margin-top: 0.5em;
-		margin-bottom: 1em;
-	}
-
-	.checkboxes label {
-		padding-left: 1em;
-		margin-bottom: 0.1em;
-	}
-
-	.checkboxes input {
-		margin-right: 1em;
 	}
 
 	select {
