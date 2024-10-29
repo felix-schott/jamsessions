@@ -1,4 +1,4 @@
-module github.com/felix-schott/london-jam-sessions
+module github.com/felix-schott/jamsessions/backend
 
 go 1.22.5
 

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log"
 
-	dbutils "github.com/felix-schott/london-jam-sessions/internal/db"
-	"github.com/felix-schott/london-jam-sessions/internal/geocoding"
+	dbutils "github.com/felix-schott/jamsessions/backend/internal/db"
+	"github.com/felix-schott/jamsessions/backend/internal/geocoding"
 
 	"github.com/alexflint/go-arg"
 )
