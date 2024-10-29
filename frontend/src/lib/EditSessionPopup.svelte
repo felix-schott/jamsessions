@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { SessionProperties } from '../types';
+	import { type SessionProperties, Genre, Backline } from '../types';
 	import ButtonGroup from '$lib/ButtonGroup.svelte';
 	import {
 		deleteSessionById,
@@ -17,9 +17,18 @@
 	let timeChanged = false;
 	let sessionClosed = false;
 	let otherChanges = false;
+	let genreChanged = false;
+	let backlineChanged = false;
 
 	// enable submit button when at least one of the inputs have data
-	$: buttonEnabled = addressChanged || venueClosed || timeChanged || sessionClosed || otherChanges;
+	$: buttonEnabled =
+		addressChanged ||
+		venueClosed ||
+		timeChanged ||
+		sessionClosed ||
+		genreChanged ||
+		backlineChanged ||
+		otherChanges;
 
 	const onSubmit = async (ev: MouseEvent) => {
 		ev.preventDefault();
@@ -77,7 +86,7 @@
 			} catch (e) {
 				success = false;
 				alert(
-					'An error occurred trying to propose a different time for the session: ' +
+					'An error occurred trying to suggest there is a different time for the session: ' +
 						(e as Error).message +
 						'\nPlease get in touch at felix.schott@proton.me instead.'
 				);
@@ -90,6 +99,38 @@
 				success = false;
 				alert(
 					'An error occurred trying to propose the deletion of the session: ' +
+						(e as Error).message +
+						'\nPlease get in touch at felix.schott@proton.me instead.'
+				);
+			}
+		}
+		if (genreChanged) {
+			try {
+				await patchSessionById(properties.session_id!, {
+					genres: Array.from(document.querySelectorAll('.new-genre-checkbox:checked')).map(
+						(i) => i.id.replace('new-genre-', '') as Genre
+					)
+				});
+			} catch (e) {
+				success = false;
+				alert(
+					'An error occurred trying to suggest there is a different genre list: ' +
+						(e as Error).message +
+						'\nPlease get in touch at felix.schott@proton.me instead.'
+				);
+			}
+		}
+		if (backlineChanged) {
+			try {
+				await patchVenueById(properties.venue!, {
+					backline: Array.from(document.querySelectorAll('.new-backline-checkbox:checked')).map(
+						(i) => i.id.replace('new-backline-', '') as Genre
+					)
+				});
+			} catch (e) {
+				success = false;
+				alert(
+					'An error occurred trying to suggest there is a different backline: ' +
 						(e as Error).message +
 						'\nPlease get in touch at felix.schott@proton.me instead.'
 				);
@@ -110,7 +151,9 @@
 			}
 		}
 		if (success === true) {
-			alert('Thank you! A member of the admin team will review your suggestions and apply the changes. For other feedback you can also get in touch at felix.schott@proton.me.')
+			alert(
+				'Thank you! A member of the admin team will review your suggestions and apply the changes. For other feedback you can also get in touch at felix.schott@proton.me.'
+			);
 		}
 	};
 </script>
@@ -134,16 +177,16 @@
 		</div>
 		<div class:vertical={addressChanged} class:hidden={!addressChanged}>
 			<label for="new-address-first-line"
-				>Address first line: <input type="text" id="new-address-first-line" required /></label
+				>Address first line: <input type="text" id="new-address-first-line" required={addressChanged} /></label
 			>
 			<label for="new-address-second-line"
 				>Address second line: <input type="text" id="new-address-second-line" /></label
 			>
 			<label for="new-address-city"
-				>City: <input type="text" id="new-address-city" required /></label
+				>City: <input type="text" id="new-address-city" required={addressChanged} /></label
 			>
 			<label for="new-address-postcode"
-				>Postcode: <input type="text" id="new-address-postcode" required /></label
+				>Postcode: <input type="text" id="new-address-postcode" required={addressChanged} /></label
 			>
 		</div>
 	</div>
@@ -180,8 +223,8 @@
 			/>
 		</div>
 		<div class:vertical={timeChanged} class:hidden={!timeChanged}>
-			<label for="new-time-start">From: <input type="time" id="new-time-start" required /></label>
-			<label for="new-time-finish">To: <input type="time" id="new-time-finish" required /></label>
+			<label for="new-time-start">From: <input type="time" id="new-time-start" required={timeChanged} /></label>
+			<label for="new-time-finish">To: <input type="time" id="new-time-finish" required={timeChanged} /></label>
 		</div>
 	</div>
 	<div class="card">
@@ -202,6 +245,68 @@
 	</div>
 	<div class="card">
 		<div class="horizontal">
+			<b>The list of genres is incomplete or wrong.</b>
+			<ButtonGroup
+				activeIndex={1}
+				options={['yes', 'no']}
+				on:change={(ev) => {
+					if (ev.detail.activeOption === 'yes') {
+						genreChanged = true;
+					} else {
+						genreChanged = false;
+					}
+				}}
+			/>
+		</div>
+		<div class:vertical={genreChanged} class:hidden={!genreChanged}>
+			Please select all genres that apply:
+			<div class="checkboxes">
+				{#each Object.values(Genre) as genre}
+					{#if genre != 'ANY'}
+						<label for="new-genre-{genre}"
+							><input
+								type="checkbox"
+								class="new-genre-checkbox"
+								id="new-genre-{genre}"
+							/>{genre.replace('_', ' ')}</label
+						>
+					{/if}
+				{/each}
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="horizontal">
+			<b>The backline information is incomplete/wrong.</b>
+			<ButtonGroup
+				activeIndex={1}
+				options={['yes', 'no']}
+				on:change={(ev) => {
+					if (ev.detail.activeOption === 'yes') {
+						backlineChanged = true;
+					} else {
+						backlineChanged = false;
+					}
+				}}
+			/>
+		</div>
+		<div class:vertical={backlineChanged} class:hidden={!backlineChanged}>
+			Please select the full backline provided by the venue:
+			<div class="checkboxes">
+				{#each Object.values(Backline) as backline}
+					<label for="new-backline-{backline}"
+						><input
+							type="checkbox"
+							class="new-backline-checkbox"
+							id="new-backline-{backline}"
+						/>{backline.replace('_', ' ')}</label
+					>
+				{/each}
+			</div>
+		</div>
+	</div>
+	<div class="card">
+		<div class="horizontal">
 			<b>There have been other changes.</b>
 			<ButtonGroup
 				activeIndex={1}
@@ -216,7 +321,7 @@
 			/>
 		</div>
 		<div class:vertical={otherChanges} class:hidden={!otherChanges}>
-			<textarea id="other-suggestions" cols="40" rows="5" required></textarea>
+			<textarea id="other-suggestions" cols="40" rows="5" required={otherChanges}></textarea>
 		</div>
 	</div>
 
@@ -260,12 +365,12 @@
 		margin-bottom: 1em;
 	}
 
-	.vertical label {
+	.vertical > label {
 		display: flex;
 		justify-content: space-between;
 	}
 
-	.vertical label:not(:last-child) {
+	.vertical > label:not(:last-child) {
 		margin-bottom: 1em;
 	}
 </style>

@@ -82,23 +82,11 @@
 <Modal
 	isVisible={() => true}
 	hide={() => {
-		window.location.assign('/');
+		if (editing) {
+			editing = false;
+		} else window.location.assign('/');
 	}}
 >
-	<div slot="bottom-left">
-		{#if editing}
-			<button class="arrow-back"
-				><ArrowLeftIcon
-					title="Go back to session overview"
-					height="1.5em"
-					width="1.5em"
-					on:click={() => {
-						editing = false;
-					}}
-				/>
-			</button>
-		{/if}
-	</div>
 	{#if !editing}
 		<div>
 			<h2>
@@ -301,19 +289,6 @@
 		padding: 0.5em;
 		border-radius: 10px;
 		margin-top: 1em;
-	}
-
-	.arrow-back {
-		background: none; 
-		padding: 2.5em;
-		margin-left: 2em;
-	}
-
-	@media (max-width: 480px) {
-		.arrow-back {
-			padding: 1.5em;
-			margin-left: 0;
-		}
 	}
 
 	ul {
