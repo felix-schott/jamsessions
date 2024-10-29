@@ -1,9 +1,18 @@
 <script lang="ts">
-    export let height: string = "1em";
-    export let width: string = "1em";
-    export let title: string;
-    let _class: string = "";
-    export { _class as class };
+    interface Props {
+        height?: string;
+        width?: string;
+        title: string;
+        class?: string;
+    }
+
+    let {
+        height = "1em",
+        width = "1em",
+        title,
+        class: _class = ""
+    }: Props = $props();
+    
 </script>
 
 <svg xmlns="http://www.w3.org/2000/svg" {height} {width} class={_class} viewBox="0 0 512 512"><title>{title}</title><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="48" d="M112 184l144 144 144-144"/></svg>

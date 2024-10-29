@@ -4,7 +4,11 @@
     import { getCommentsBySessionId, getSessionById, getVenueById } from "../../api";
     import type { SessionSlugData } from "./+page.js";
 
-    export let data: SessionSlugData;
+    interface Props {
+        data: SessionSlugData;
+    }
+
+    let { data }: Props = $props();
 
     const getSessionByIdWithErrorHandling = async (): Promise<[SessionFeature, VenueFeature, SessionComment[]]> => {
         try {

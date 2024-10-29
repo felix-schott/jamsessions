@@ -64,10 +64,10 @@
 <div class="loading-pane">
     {#if $loading}
     <div class="lds-ring">
-        <div />
-        <div />
-        <div />
-        <div />
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
     </div>
     {/if}
 </div>

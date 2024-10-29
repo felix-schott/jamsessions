@@ -96,12 +96,12 @@
 					<ShareIcon
 						style="cursor: pointer; margin-left: 0.3em; vertical-align: middle;"
 						title="Share link to session"
-						on:click={onShare}
+						onclick={onShare}
 					/>
 					<EditIcon
 						style="cursor: pointer; margin-left: 0.3em; vertical-align: middle;"
 						title="Suggest changes to this page"
-						on:click={() => {
+						onclick={() => {
 							editing = true;
 						}}
 					/></span
@@ -109,52 +109,55 @@
 			</h2>
 		</div>
 		<table>
-			<tr>
-				<td><LocationIcon title="Address of venue" class="icon-auto" /></td>
-				<td>
-					<a href={venueProperties?.venue_website} target="_blank">{venueProperties?.venue_name}</a
-					><br />
-					{venueProperties?.address_first_line}<br />
-					{#if venueProperties.address_second_line}
-						{venueProperties?.address_second_line}<br />
-					{/if}
-					{venueProperties?.city}<br />
-					{venueProperties?.postcode}<br />
-					<a
-						target="_blank"
-						href="https://www.google.com/maps/place/{venueProperties.address_first_line.replaceAll(
-							' ',
-							'+'
-						)},+{venueProperties.city.replaceAll(' ', '+')}+{venueProperties.postcode.replaceAll(
-							' ',
-							'+'
-						)}/">View on Google Maps</a
-					>
-				</td>
-			</tr>
-			<tr>
-				<td><TimeIcon title="Time of event" class="icon-auto" /></td>
-				<td>{constructTimeString(sessionProperties)}</td>
-			</tr>
-			{#if sessionProperties.genres && sessionProperties.genres.length !== 0}
+			<tbody>
 				<tr>
-					<td><FileTrayIcon title="Primary genre of event" class="icon-auto" /></td>
-					<td>{sessionProperties?.genres.map((i) => i.replace('_', ' ')).join(', ')}</td>
+					<td><LocationIcon title="Address of venue" class="icon-auto" /></td>
+					<td>
+						<a href={venueProperties?.venue_website} target="_blank"
+							>{venueProperties?.venue_name}</a
+						><br />
+						{venueProperties?.address_first_line}<br />
+						{#if venueProperties.address_second_line}
+							{venueProperties?.address_second_line}<br />
+						{/if}
+						{venueProperties?.city}<br />
+						{venueProperties?.postcode}<br />
+						<a
+							target="_blank"
+							href="https://www.google.com/maps/place/{venueProperties.address_first_line.replaceAll(
+								' ',
+								'+'
+							)},+{venueProperties.city.replaceAll(' ', '+')}+{venueProperties.postcode.replaceAll(
+								' ',
+								'+'
+							)}/">View on Google Maps</a
+						>
+					</td>
 				</tr>
-			{/if}
-			{#if venueProperties.backline && venueProperties.backline.length !== 0}
 				<tr>
-					<td><MicrophoneIcon title="Backline provided by venue" class="icon-auto" /></td>
-					<td
-						>{venueProperties?.backline
-							.slice(0, -1)
-							.map((i) => i.replace('_', ' '))
-							.join(', ') +
-							' and ' +
-							venueProperties?.backline.slice(-1)[0].replace('_', ' ')}</td
-					>
+					<td><TimeIcon title="Time of event" class="icon-auto" /></td>
+					<td>{constructTimeString(sessionProperties)}</td>
 				</tr>
-			{/if}
+				{#if sessionProperties.genres && sessionProperties.genres.length !== 0}
+					<tr>
+						<td><FileTrayIcon title="Primary genre of event" class="icon-auto" /></td>
+						<td>{sessionProperties?.genres.map((i) => i.replace('_', ' ')).join(', ')}</td>
+					</tr>
+				{/if}
+				{#if venueProperties.backline && venueProperties.backline.length !== 0}
+					<tr>
+						<td><MicrophoneIcon title="Backline provided by venue" class="icon-auto" /></td>
+						<td
+							>{venueProperties?.backline
+								.slice(0, -1)
+								.map((i) => i.replace('_', ' '))
+								.join(', ') +
+								' and ' +
+								venueProperties?.backline.slice(-1)[0].replace('_', ' ')}</td
+						>
+					</tr>
+				{/if}
+			</tbody>
 		</table>
 		<p>
 			{sessionProperties?.description}
@@ -199,7 +202,7 @@
 					<button
 						title="Add comment"
 						style="display: flex; align-items: center; padding: 0.3em 0.6em; font-size: smaller;"
-						on:click={() => {
+						onclick={() => {
 							newCommentHidden = false;
 						}}
 						><PlusIcon
@@ -218,13 +221,13 @@
 						title="Close new comment section"
 						role="button"
 						style="cursor: pointer; float: right; color: red;"
-						on:click={() => {
+						onclick={() => {
 							newCommentHidden = true;
 						}}>×</span
 					>
 					<p style="font-size: smaller;">
 						If you want to report inaccurate data instead, please <span
-							on:click={() => {
+							onclick={() => {
 								editing = true;
 							}}
 							style="color: #646cff; cursor: pointer;
@@ -236,12 +239,12 @@
 						bind:value={newCommentContent}
 						id="new-comment"
 						style="width: 100%; height: 3em; margin-top: 1em;"
-					/>
+					></textarea>
 					<div style="margin-top: 0.5em; display: flex; align-items: center;">
 						Rate your experience: <SelectRating
 							style="margin-left: 0.3em;"
-							on:change={(ev) => {
-								newRating = ev.detail.rating;
+							onchange={(rating) => {
+								newRating = rating
 							}}
 						/>
 					</div>
@@ -254,7 +257,7 @@
 					<div class="horizontal-center">
 						<button
 							style="font-size: smaller; margin-top: 0.5em; background-color: white; font-color: black;"
-							on:click={onSubmitNewComment}>Submit</button
+							onclick={onSubmitNewComment}>Submit</button
 						>
 					</div>
 				</div>

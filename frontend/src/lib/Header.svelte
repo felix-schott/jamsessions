@@ -16,7 +16,7 @@
 
 	const today = new Date();
 	const todayString = today.toISOString().slice(0, 10);
-	let selectedDateStr: string;
+	let selectedDateStr: string = $state("");
 
 	const onDateChange = async () => {
 		$loading = true;
@@ -51,7 +51,7 @@
 	<span
 		class="title clickable"
 		title="About this website"
-		on:click={() => {
+		onclick={() => {
 			$infoVisible = true;
 		}}
 	>
@@ -68,11 +68,11 @@ in <b>London</b><InfoIcon
 			class="clickable"
 			height="2em"
 			width="2em"
-			on:click={() => {
+			onclick={() => {
 				$filterMenuVisible = true;
 			}}
 		/>
-		<input type="date" min={todayString} bind:value={selectedDateStr} on:change={onDateChange} />
+		<input type="date" min={todayString} bind:value={selectedDateStr} onchange={onDateChange} />
 	</div>
 </div>
 

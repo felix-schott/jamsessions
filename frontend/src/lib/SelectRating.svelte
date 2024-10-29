@@ -1,18 +1,21 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import StarEmptyIcon from './icons/StarEmptyIcon.svelte';
 	import StarFilledIcon from './icons/StarFilledIcon.svelte';
 
-	const dispatch = createEventDispatcher();
-	export let style: string = '';
-	export let size: string = '1em';
+	interface Props {
+		style?: string;
+		size?: string;
+		onchange?: (rating: number) => void;
+	}
 
-	let currentRating = 0;
-	let currentRatingHover = 0;
+	let { style = '', size = '1em', onchange }: Props = $props();
+
+	let currentRating = $state(0);
+	let currentRatingHover = $state(0);
 
 	const onClick = (idx: number) => {
 		currentRating = idx + 1;
-        dispatch('change', { rating: currentRating });
+        if (onchange) onchange(currentRating);
 	};
 	const onHover = (idx: number) => {
         currentRatingHover = idx + 1;
@@ -20,23 +23,23 @@
 </script>
 
 <!-- set currentRatingHover back to 0 when the mouse leaves the div -->
-<div class="rating-select" {style} on:mouseleave={() => {currentRatingHover = 0}}> 
+<div class="rating-select" {style} onmouseleave={() => {currentRatingHover = 0}}> 
 	{#each Array.from(Array(5).keys()) as idx}
 		{#if currentRating >= idx + 1 || currentRatingHover >= idx + 1}
 			<StarFilledIcon
 				title="Rate {idx + 1} stars"
 				height={size}
 				width={size}
-				on:mouseover={() => onHover(idx)}
-				on:click={() => onClick(idx)}
+				onmouseover={() => onHover(idx)}
+				onclick={() => onClick(idx)}
 			/>
 		{:else}
 			<StarEmptyIcon
 				title="Rate {idx + 1} stars"
 				height={size}
 				width={size}
-				on:mouseover={() => onHover(idx)}
-				on:click={() => onClick(idx)}
+				onmouseover={() => onHover(idx)}
+				onclick={() => onClick(idx)}
 			/>
 		{/if}
 	{/each}

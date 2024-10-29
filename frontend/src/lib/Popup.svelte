@@ -1,20 +1,37 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import ExpandIcon from './icons/ExpandIcon.svelte';
-	import { createEventDispatcher } from 'svelte';
-	const dispatch = createEventDispatcher();
-	export let id: string;
-	export let title: string = '';
-	export let blur: boolean = false;
+
+	interface Props {
+		id: string;
+		title?: string;
+		blur?: boolean;
+		onclick?: () => any;
+		onclose?: () => void;
+		heading?: Snippet;
+		content: Snippet;
+	}
+	let { id, title = '', blur = false, onclick, onclose, heading, content }: Props = $props();
 </script>
 
 <div class="popup-container">
 	<div {id} class:popup={!blur} class:popup-blur={blur} {title}>
-		<span on:click>
-			<slot name="title"></slot>
-			<slot name="content"></slot>
+		<span {onclick}>
+			{#if heading}
+				{@render heading()}
+			{/if}
+			{@render content()}
 		</span>
 		<!-- <div class="popup-controls"> -->
-		<div id={id + 'close'} on:click={() => dispatch('close')} class="popup-close">×</div>
+		<div
+			id={id + 'close'}
+			onclick={() => {
+				if (onclose) onclose();
+			}}
+			class="popup-close"
+		>
+			×
+		</div>
 		{#if blur}
 			<div class="expand"><ExpandIcon title="Expand" /></div>
 		{/if}
@@ -26,7 +43,8 @@
 		max-width: 40vw;
 	}
 
-	.popup, .popup-blur {
+	.popup,
+	.popup-blur {
 		background-color: white;
 		border-radius: 10px;
 		padding: 2em;
@@ -36,9 +54,9 @@
 		overflow: hidden;
 	}
 
-    .popup-blur {
-        padding-bottom: 3em;
-    }
+	.popup-blur {
+		padding-bottom: 3em;
+	}
 
 	.popup-blur:after {
 		content: '';
@@ -53,7 +71,8 @@
 	}
 
 	@media (max-width: 480px) {
-		.popup, .popup-blur {
+		.popup,
+		.popup-blur {
 			padding: 1em;
 		}
 		.popup-container {
@@ -70,7 +89,8 @@
 		padding: 0.5em;
 	}
 
-	.popup > span, .popup-blur > span {
+	.popup > span,
+	.popup-blur > span {
 		font-size: larger;
 		/* margin-bottom: 1.5em; */
 	}

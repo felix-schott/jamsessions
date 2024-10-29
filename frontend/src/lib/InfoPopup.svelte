@@ -11,8 +11,7 @@
 >
 	<h2>About</h2>
 	<p>
-		<i>Jam Sessions in London</i> is a free website that shows public jam sessions happening on a given
-		date in London.
+		<i>Jam Sessions in London</i> is a free website that shows public jam sessions happening in London.
 	</p>
 	<h2>How it works</h2>
 	<p>

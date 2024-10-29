@@ -1,20 +1,21 @@
 <script lang="ts">
     import { createEventDispatcher } from "svelte";
-	export let options: string[];
-	export let activeIndex: number = 0;
+	interface Props {
+		options: string[];
+		activeIndex?: number;
+		onchange?: (activeOption: string) => any;
+	}
 
-    const dispatch = createEventDispatcher();
+	let { options, activeIndex = $bindable(0), onchange }: Props = $props();
 </script>
 
 <div class="btn-group">
 	{#each options as opt, idx}
 		<button
 			class:active={activeIndex === idx}
-			on:click={() => {
+			onclick={() => {
 				activeIndex = idx;
-                dispatch("change", {
-                    activeOption: opt
-                })
+				if (onchange) onchange(opt);
 			}}>{opt}</button
 		>
 	{/each}

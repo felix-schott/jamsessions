@@ -2,12 +2,16 @@
 <script lang="ts">
     import { onMount } from "svelte";
 
-    let component: HTMLElement;
-    export let message: string;
+    let component: HTMLElement | undefined = $state();
+    interface Props {
+        message: string;
+    }
+
+    let { message }: Props = $props();
     
     onMount(async () => { 
         await new Promise(r => setTimeout(r, 3000)); // ms value must correspond to css animation duration (2s)
-        component.parentNode!.removeChild(component); // destroy
+        component!.parentNode!.removeChild(component!); // destroy
     })
 </script>
 

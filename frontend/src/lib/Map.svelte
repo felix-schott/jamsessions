@@ -14,7 +14,7 @@
 	import { OSM, Vector as VectorSource } from 'ol/source';
 	// import { PMTilesRasterSource } from "ol-pmtiles";
 
-	import { onMount } from 'svelte';
+	import { onMount, mount } from 'svelte';
 	import {
 		visibleLayer,
 		selectedSessions
@@ -28,7 +28,6 @@
 	} from '../types';
 	import { flyTo, sessionStyle } from './mapUtils';
 	import SessionPopup from './SessionPopup.svelte';
-	import VenuePopup from './VenuePopup.svelte';
 	import Message from './Message.svelte';
 
 	type SessionsByVenue = { [key: number]: Feature[] };
@@ -58,7 +57,10 @@
 	});
 
 	// reactivity - whenever the stores change (and the condition evaluates to true, the respective render function is called)
-	$: if ($visibleLayer == MapLayer.SESSIONS && $selectedSessions !== null) renderSessions();
+	$effect(() => {
+		if ($visibleLayer == MapLayer.SESSIONS && $selectedSessions !== null) renderSessions();
+	})
+
 	// $: if ($visibleLayer == MapLayer.VENUES && $venues != null) renderVenues();
 
 	// handler funcs - both follow the same structure
@@ -113,10 +115,10 @@
 				}
 			}
 		} else {
-			new Message({
-				props: { message: 'No sessions found for this day!' },
-				target: document.body
-			});
+			mount(Message, {
+            				props: { message: 'No sessions found for this day!' },
+            				target: document.body
+            			});
 		}
 	};
 
@@ -181,16 +183,13 @@
 			let popup: Overlay;
 
 			if (isSession) {
-				const sessionPopup = new SessionPopup({
-					props: {
-						propertiesList: propertiesList as SessionPropertiesWithVenue[]
-					},
-					target: elem
-				});
-				// sessionPopup.$on('click', () => {
-				// 	window.location.assign('/' + properties.session_id); // navigate to page /[slug] where [slug] is a session id
-				// });
-				sessionPopup.$on('close', () => map.removeOverlay(popup));
+				const sessionPopup = mount(SessionPopup, {
+                					props: {
+                						propertiesList: propertiesList as SessionPropertiesWithVenue[],
+										onclose: () => map.removeOverlay(popup)
+                					},
+                					target: elem
+                				});
 			} else {
 				// new VenuePopup({
 				// 	props: {
@@ -313,7 +312,7 @@
 </script>
 
 <div id="map" class="map"></div>
-<div id="popups" />
+<div id="popups"></div>
 
 <style>
 	#map {

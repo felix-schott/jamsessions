@@ -3,11 +3,13 @@
 	import StarHalfIcon from './icons/StarHalfIcon.svelte';
 	import StarFilledIcon from './icons/StarFilledIcon.svelte';
 
-	export let n: number;
-    export let style: string = "";
-    export let size: string = "1em";
+	interface Props {
+		n: number;
+		style?: string;
+		size?: string;
+	}
 
-    console.log("n", n)
+	let { n, style = "", size = "1em" }: Props = $props();
 
 	if (n < 0 || n > 5) {
 		throw Error('Rating must be between 0 and 5');
