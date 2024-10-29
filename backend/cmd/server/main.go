@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	dbutils "github.com/felix-schott/london-jam-sessions/internal/db"
+	dbutils "github.com/felix-schott/jamsessions/backend/internal/db"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-fuego/fuego"
 	"github.com/rs/cors"

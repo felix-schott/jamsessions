@@ -8,12 +8,18 @@
 -->
 
 <script lang="ts">
-    export let style: string = "";
-    export let type: string = "";
-    let _additional_class: string = "";
-	export { _additional_class as class };
-    let _class = `window-control-button ${_additional_class}`;
-    let content: string = "";
+	import type { Snippet } from "svelte";
+
+    interface Props {
+        style?: string
+        type?: string
+        class?: string
+        onclick: () => void;
+    }
+    let content: string = $state("");
+
+    let { style = "", type = "", class: _class = "", onclick }: Props = $props();
+    let allClasses = `window-control-button ${_class}`;
 
     switch (type) {
         case "close":
@@ -28,9 +34,8 @@
     }
 </script>
 
-<button class={_class} {style} on:click >
+<button class={allClasses} {style} {onclick} >
 {content}
-<slot/>
 </button>
 
 <style>

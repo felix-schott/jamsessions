@@ -9,26 +9,30 @@
 		postSuggestionForSessionById
 	} from '../api';
 
-	export let properties: SessionProperties;
+	interface Props {
+		properties: SessionProperties;
+	}
+
+	let { properties }: Props = $props();
 
 	// state management for form inputs
-	let addressChanged = false;
-	let venueClosed = false;
-	let timeChanged = false;
-	let sessionClosed = false;
-	let otherChanges = false;
-	let genreChanged = false;
-	let backlineChanged = false;
+	let addressChanged = $state(false);
+	let venueClosed = $state(false);
+	let timeChanged = $state(false);
+	let sessionClosed = $state(false);
+	let otherChanges = $state(false);
+	let genreChanged = $state(false);
+	let backlineChanged = $state(false);
 
 	// enable submit button when at least one of the inputs have data
-	$: buttonEnabled =
-		addressChanged ||
+	let buttonEnabled =
+		$derived(addressChanged ||
 		venueClosed ||
 		timeChanged ||
 		sessionClosed ||
 		genreChanged ||
 		backlineChanged ||
-		otherChanges;
+		otherChanges);
 
 	const onSubmit = async (ev: MouseEvent) => {
 		ev.preventDefault();
@@ -166,8 +170,8 @@
 			<ButtonGroup
 				activeIndex={1}
 				options={['yes', 'no']}
-				on:change={(ev) => {
-					if (ev.detail.activeOption === 'yes') {
+				onchange={(activeOption) => {
+					if (activeOption === 'yes') {
 						addressChanged = true;
 					} else {
 						addressChanged = false;
@@ -197,8 +201,8 @@
 			<ButtonGroup
 				activeIndex={1}
 				options={['yes', 'no']}
-				on:change={(ev) => {
-					if (ev.detail.activeOption == 'yes') {
+				onchange={(activeOption) => {
+					if (activeOption == 'yes') {
 						venueClosed = true;
 					} else {
 						venueClosed = false;
@@ -213,8 +217,8 @@
 			<ButtonGroup
 				activeIndex={1}
 				options={['yes', 'no']}
-				on:change={(ev) => {
-					if (ev.detail.activeOption === 'yes') {
+				onchange={(activeOption) => {
+					if (activeOption === 'yes') {
 						timeChanged = true;
 					} else {
 						timeChanged = false;
@@ -233,8 +237,8 @@
 			<ButtonGroup
 				activeIndex={1}
 				options={['yes', 'no']}
-				on:change={(ev) => {
-					if (ev.detail.activeOption == 'yes') {
+				onchange={(activeOption) => {
+					if (activeOption == 'yes') {
 						sessionClosed = true;
 					} else {
 						sessionClosed = false;
@@ -249,8 +253,8 @@
 			<ButtonGroup
 				activeIndex={1}
 				options={['yes', 'no']}
-				on:change={(ev) => {
-					if (ev.detail.activeOption === 'yes') {
+				onchange={(activeOption) => {
+					if (activeOption === 'yes') {
 						genreChanged = true;
 					} else {
 						genreChanged = false;
@@ -281,8 +285,8 @@
 			<ButtonGroup
 				activeIndex={1}
 				options={['yes', 'no']}
-				on:change={(ev) => {
-					if (ev.detail.activeOption === 'yes') {
+				onchange={(activeOption) => {
+					if (activeOption === 'yes') {
 						backlineChanged = true;
 					} else {
 						backlineChanged = false;
@@ -311,8 +315,8 @@
 			<ButtonGroup
 				activeIndex={1}
 				options={['yes', 'no']}
-				on:change={(ev) => {
-					if (ev.detail.activeOption === 'yes') {
+				onchange={(activeOption) => {
+					if (activeOption === 'yes') {
 						otherChanges = true;
 					} else {
 						otherChanges = false;
@@ -326,7 +330,7 @@
 	</div>
 
 	<div style="display: flex; justify-content: center; margin-top: 2em;">
-		<button disabled={!buttonEnabled} on:click={onSubmit}
+		<button disabled={!buttonEnabled} onclick={onSubmit}
 			><span>Suggest changes</span><br /><span>to our team</span></button
 		>
 	</div>

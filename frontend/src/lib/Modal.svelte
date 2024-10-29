@@ -1,33 +1,42 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import WindowControlButton from './WindowControlButton.svelte';
 
-	export let isVisible: () => boolean;
-	export let hide: () => void;
+	interface Props {
+		isVisible: () => boolean;
+		hide: () => void;
+		children: Snippet;
+		topLeft?: Snippet;
+		bottomLeft?: Snippet;
+	}
 
-	// const dispatch = createEventDispatcher();
+	let { isVisible, hide, children, topLeft, bottomLeft }: Props = $props();
 
 	const checkClick = (ev: Event) => {
 		let clickedElement = ev.target as HTMLElement;
 		if (clickedElement.id === 'outside-popup') {
-			// dispatch('close');
 			hide();
 		}
 	};
 </script>
 
 {#if isVisible()}
-	<div class="blurry-background" />
-	<div class="popup-pane" id="outside-popup" on:click={checkClick}>
+	<div class="blurry-background"></div>
+	<div class="popup-pane" id="outside-popup" onclick={checkClick}>
 		<div class="popup">
-			<WindowControlButton type="close" on:click={hide} />
-			<div class="top-left">
-				<slot name="top-left" />
-			</div>
-			<div class="bottom-left">
-				<slot name="bottom-left" />
-			</div>
+			<WindowControlButton type="close" onclick={hide} />
+			{#if topLeft}
+				<div class="top-left">
+					{@render topLeft()}
+				</div>
+			{/if}
+			{#if bottomLeft}
+				<div class="bottom-left">
+					{@render bottomLeft()}
+				</div>
+			{/if}
 			<div class="modal-content">
-				<slot />
+				{@render children()}
 			</div>
 		</div>
 	</div>
@@ -79,7 +88,6 @@
 			left: 0.2em;
 		}
 	}
-
 
 	.popup-pane {
 		z-index: 800000002;

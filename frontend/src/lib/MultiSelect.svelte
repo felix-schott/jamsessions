@@ -1,11 +1,20 @@
 <!-- Changes <select multiple> behaviour to also accept a single click instead of the default shift+click -->
 <script lang="ts">
-    import { createEventDispatcher } from "svelte";
-    export let name: string;
-    export let id: string;
-    export let title: string;
+    interface Props {
+        name: string;
+        id: string;
+        title: string;
+        children?: import('svelte').Snippet;
+        onchange?: () => any;
+    }
 
-    let dispatch = createEventDispatcher();
+    let {
+        name,
+        id,
+        title,
+        children,
+        onchange
+    }: Props = $props();
 
     // adapted from https://stackoverflow.com/a/59084958
     const onMousedown = (e: MouseEvent) => {
@@ -25,10 +34,10 @@
         (e.target! as HTMLOptionElement).scrollTop = scroll;
         // make sure that other listeners pick up on the change
         // even though we prevented the default
-        dispatch("change")
+        if (onchange) onchange()
     };
 </script>
 
-<select {id} {title} {name} on:change multiple on:mousedown={onMousedown}>
-    <slot />
+<select {id} {title} {name} {onchange} multiple onmousedown={onMousedown}>
+    {@render children?.()}
 </select>

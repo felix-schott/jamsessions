@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/felix-schott/london-jam-sessions/internal/types"
+	"github.com/felix-schott/jamsessions/backend/internal/types"
 	"github.com/jackc/pgx/v5/pgtype"
 	geom "github.com/twpayne/go-geom"
 )

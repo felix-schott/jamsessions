@@ -29,7 +29,7 @@
 			})) as SessionFeatureCollection;
 		} catch (e) {
 			alert('An error occured when waiting for data from the server: ' + (e as Error).message);
-			throw e
+			throw e;
 		}
 		$visibleLayer = MapLayer.SESSIONS;
 		$loading = false;
@@ -50,51 +50,54 @@
 	}}
 >
 	<table>
-		<tr>
-			<td><FileTrayIcon title="Select genre" class="icon-auto" /></td>
-			<td
-				><select title="Select genre" name="genre" bind:value={selectedGenre} on:change={() => {
-					window.sessionStorage.setItem("selectedGenre", selectedGenre);
-				}}>
-					{#each Object.values(Genre) as opt}
-						{#if window.sessionStorage.getItem('selectedGenre') === opt}
-							<option value={opt} selected>{opt.replace('_', ' ')}</option>
-						{:else}
-							<option value={opt}>{opt.replace('_', ' ')}</option>
-						{/if}
-					{/each}
-				</select></td
-			>
-		</tr>
-		<tr>
-			<td
-				><MicrophoneIcon
-					title="Select backline provided by venue"
-				/></td
-			>
-			<td>
-				<MultiSelect
-					title="Select backline provided by genre"
-					id="backline-select"
-					name="backline"
-					on:change={onChangeBackline}
+		<tbody>
+			<tr>
+				<td><FileTrayIcon title="Select genre" class="icon-auto" /></td>
+				<td
+					><select
+						title="Select genre"
+						name="genre"
+						bind:value={selectedGenre}
+						onchange={() => {
+							window.sessionStorage.setItem('selectedGenre', selectedGenre);
+						}}
+					>
+						{#each Object.values(Genre) as opt}
+							{#if window.sessionStorage.getItem('selectedGenre') === opt}
+								<option value={opt} selected>{opt.replace('_', ' ')}</option>
+							{:else}
+								<option value={opt}>{opt.replace('_', ' ')}</option>
+							{/if}
+						{/each}
+					</select></td
 				>
-					{#each Object.values(Backline) as opt}
-						{#if selectedBackline.includes(opt)}
-							<option value={opt} selected>{opt.replace('_', ' ')}</option>
-						{:else}
-							<option value={opt}>{opt.replace('_', ' ')}</option>
-						{/if}
-					{/each}
-				</MultiSelect>
-			</td>
-		</tr>
+			</tr>
+			<tr>
+				<td><MicrophoneIcon title="Select backline provided by venue" /></td>
+				<td>
+					<MultiSelect
+						title="Select backline provided by genre"
+						id="backline-select"
+						name="backline"
+						onchange={onChangeBackline}
+					>
+						{#each Object.values(Backline) as opt}
+							{#if selectedBackline.includes(opt)}
+								<option value={opt} selected>{opt.replace('_', ' ')}</option>
+							{:else}
+								<option value={opt}>{opt.replace('_', ' ')}</option>
+							{/if}
+						{/each}
+					</MultiSelect>
+				</td>
+			</tr>
+		</tbody>
 	</table>
 	<div
 		style="display: flex; width: 100%; height: 100%; justify-content: space-between; align-items: center; margin-top: 1em;"
 	>
-		<ResetIcon title="Unset filters" on:click={onReset} style="cursor: pointer;" />
-		<button title="Apply filters and load sessions" on:click={onSubmit}>Apply</button>
+		<ResetIcon title="Unset filters" onclick={onReset} style="cursor: pointer;" />
+		<button title="Apply filters and load sessions" onclick={onSubmit}>Apply</button>
 		<ResetIcon title="" style="visibility: hidden;" />
 	</div>
 </Modal>

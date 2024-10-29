@@ -15,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	dbutils "github.com/felix-schott/london-jam-sessions/internal/db"
-	"github.com/felix-schott/london-jam-sessions/internal/types"
+	dbutils "github.com/felix-schott/jamsessions/backend/internal/db"
+	"github.com/felix-schott/jamsessions/backend/internal/types"
 	"github.com/jackc/pgx/v5/pgtype"
 	geom "github.com/twpayne/go-geom"
 )

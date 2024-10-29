@@ -5,11 +5,16 @@
 	import Map from '$lib/Map.svelte';
 	import { addSessionPopupVisible } from '../stores';
 	import AddSessionPopup from '$lib/AddSessionPopup.svelte';
+	interface Props {
+		children?: import('svelte').Snippet;
+	}
+
+	let { children }: Props = $props();
 </script>
 
 <Header />
 <main>
-	<slot />
+	{@render children?.()}
 	<LoadingScreen />
 	<InfoPopup />
 	<div style="height: 100%;">
@@ -17,7 +22,7 @@
 		<button
 			class="add-session-btn"
 			title="Add session to the database"
-			on:click={() => {
+			onclick={() => {
 				$addSessionPopupVisible = true;
 			}}>Session missing?</button
 		>
