@@ -327,7 +327,7 @@ func TestHandlers(t *testing.T) {
 			t.Errorf("error reading file: %v", err)
 		}
 
-		matched, err := regexp.Match(fmt.Sprintf(`.*dbcli insert comment '\{"session":%v,.*"content":"%v"\}'`, testSession1Id, testComment), f)
+		matched, err := regexp.Match(fmt.Sprintf(`.*.*dbcli insert comment "{\\"session\\":%v,\\"author\\":\\"\\",\\"content\\":\\"%v\\"}"`, testSession1Id, testComment), f)
 		if err != nil {
 			t.Errorf("error when trying match with regex: %v", err)
 		}
@@ -380,7 +380,7 @@ func TestHandlers(t *testing.T) {
 			t.Errorf("error reading file: %v", err)
 		}
 
-		matched, err := regexp.Match(fmt.Sprintf(`insert session '\{"session_name":"%v",.*'`, "TestInsert"), f)
+		matched, err := regexp.Match(fmt.Sprintf(`insert session "{\\"session_name\\":\\"%v\\",.*`, "TestInsert"), f)
 		if err != nil {
 			t.Errorf("error when trying match with regex: %v", err)
 		}
@@ -440,7 +440,7 @@ func TestHandlers(t *testing.T) {
 			t.Errorf("error reading file: %v", err)
 		}
 
-		matched, err := regexp.Match(fmt.Sprintf(`new_id=\$\(dbcli insert venue '\{"venue_name":"%v",.*\n.*\\"session_name\\":\\"%v\\",.*`, "VenueInsert", "TestInsert2"), f)
+		matched, err := regexp.Match(fmt.Sprintf(`new_id=\$\(dbcli insert venue "{\\"venue_name\\":\\"%v\\",.*\n.*\\"session_name\\":\\"%v\\",.*`, "VenueInsert", "TestInsert2"), f)
 		if err != nil {
 			t.Errorf("error when trying match with regex: %v", err)
 		}
@@ -480,7 +480,7 @@ func TestHandlers(t *testing.T) {
 			t.Errorf("error reading file: %v", err)
 		}
 
-		matched, err := regexp.Match(fmt.Sprintf(`insert session '\{"session_name":"%v",.*'`, "TEST session 123"), f)
+		matched, err := regexp.Match(fmt.Sprintf(`insert session "{\\"session_name\\":\\"%v\\",.*`, "TEST session 123"), f)
 		if err != nil {
 			t.Errorf("error when trying match with regex: %v", err)
 		}

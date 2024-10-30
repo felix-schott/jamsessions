@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/fs"
 	"log"
 	"os"
 	"os/exec"
@@ -16,6 +15,7 @@ import (
 	"time"
 
 	dbutils "github.com/felix-schott/jamsessions/backend/internal/db"
+	migrationutils "github.com/felix-schott/jamsessions/backend/internal/migrations"
 	"github.com/felix-schott/jamsessions/backend/internal/types"
 	"github.com/jackc/pgx/v5/pgtype"
 	geom "github.com/twpayne/go-geom"
@@ -40,7 +40,7 @@ func TestCli(t *testing.T) {
 
 	// add test data - venue (tests use ephemeral databases so no need for cleanup after tests)
 	testVenueId, err := queries.InsertVenue(ctx, dbutils.InsertVenueParams{
-		VenueName:        "__TEST__",
+		VenueName:        "John Doe's Jazz Hole",
 		AddressFirstLine: "11 Downing Street",
 		City:             "London",
 		Postcode:         "SW1A 2AA",
@@ -73,8 +73,7 @@ func TestCli(t *testing.T) {
 		migrationsArchive := filepath.Join(migrationsDirectory, "/archive")
 
 		// write to migrations directory - cli call to add "Guitar_Amp" to backline field
-		fp := filepath.Join(migrationsDirectory, "UpdateVenueBackline.sh")
-		if err := os.WriteFile(fp, []byte(fmt.Sprintf(`dbcli update venue %v '{"backline": ["PA", "Drums", "Guitar_Amp"]}'`, testVenueId)), fs.FileMode(int(0755))); err != nil {
+		if fp, err := migrationutils.WriteMigration(fmt.Sprintf(`dbcli update venue %v "{"backline": ["PA", "Drums", "Guitar_Amp"]}"`, testVenueId), "test_update_venue", migrationsDirectory); err != nil {
 			t.Errorf("could not write to file %v: %v", fp, err)
 		}
 
@@ -108,7 +107,7 @@ func TestCli(t *testing.T) {
 
 		// write to migrations directory - cli call to add "Guitar_Amp" to backline field
 		testVenueProps := types.VenueProperties{
-			VenueName:        ptr("TEST_VENUE"),
+			VenueName:        ptr("Foo's Bar"),
 			AddressFirstLine: ptr("10 Downing Street"),
 			City:             ptr("London"),
 			Postcode:         ptr("SW1A 2AA"),
@@ -120,7 +119,7 @@ func TestCli(t *testing.T) {
 			t.FailNow()
 		}
 		testSessionProps := types.SessionProperties{
-			SessionName:     ptr("TEST_SESSION"),
+			SessionName:     ptr("Foo's Session"),
 			Venue:           ptr(int32(999999)), // replace this after serialisation
 			Description:     ptr("Bla bla"),
 			StartTimeUtc:    ptr(time.Date(2024, 1, 1, 1, 1, 1, 1, time.UTC)),
@@ -133,9 +132,8 @@ func TestCli(t *testing.T) {
 			t.FailNow()
 		}
 		testSessionJson = []byte(strings.Replace(string(testSessionJson), "999999", "$new_id", -1)) // set venue to bash variable that will be evaluated  when the script runs
-		fp := filepath.Join(migrationsDirectory, "InsertVenueAndSession.sh")
-		if err := os.WriteFile(fp, []byte(fmt.Sprintf(`new_id=$(dbcli insert venue '%v');`+"\n"+`dbcli insert session "%v";`, string(testVenueJson), strings.Replace(string(testSessionJson), `"`, `\"`, -1))), fs.FileMode(int(0755))); err != nil {
-			t.Errorf("could not write to file %v: %v", fp, err)
+		if _, err := migrationutils.WriteMigration(fmt.Sprintf(`new_id=$(dbcli insert venue "%s");`+"\n"+`dbcli insert session "%s";`, testVenueJson, testSessionJson), "test_insert_session", migrationsDirectory); err != nil {
+			t.Errorf("could not write migration: %v", err)
 		}
 
 		// simulate the manual execution of the script
@@ -159,13 +157,13 @@ func TestCli(t *testing.T) {
 		// log.Println(stderr.String())
 
 		// check database for results
-		record, err := queries.GetVenueByName(ctx, "TEST_VENUE")
+		record, err := queries.GetVenueByName(ctx, "Foo's Bar")
 		if err != nil {
 			t.Errorf("error when retrieving inserted venue record: %v", err)
 			t.FailNow()
 		}
-		if record.VenueName != "TEST_VENUE" {
-			t.Errorf("name (%v) doesn't match TEST_VENUE", record.VenueName)
+		if record.VenueName != "Foo's Bar" {
+			t.Errorf("name (%v) doesn't match Foo's Bar", record.VenueName)
 		}
 		sessionId, err := strconv.Atoi(strings.ReplaceAll(stdout.String(), "\n", ""))
 		log.Println("ID obtained from stdout:", sessionId)
@@ -178,8 +176,8 @@ func TestCli(t *testing.T) {
 		if err != nil {
 			t.Error("error when retrieving inserted session record:", err)
 		}
-		if rec.SessionName != "TEST_SESSION" {
-			t.Errorf("name of inserted session (%v) doesn't match TEST_SESSION", rec.SessionName)
+		if rec.SessionName != "Foo's Session" {
+			t.Errorf("name of inserted session (%v) doesn't match Foo's Session", rec.SessionName)
 		}
 	})
 
@@ -198,8 +196,7 @@ func TestCli(t *testing.T) {
 			t.FailNow()
 		}
 
-		fp := filepath.Join(migrationsDirectory, "InsertComment.sh")
-		if err := os.WriteFile(fp, []byte(fmt.Sprintf(`dbcli insert comment '%s';`, testCommentJson)), fs.FileMode(int(0755))); err != nil {
+		if fp, err := migrationutils.WriteMigration(fmt.Sprintf(`dbcli insert comment "%s";`, testCommentJson), "test_insert_comment", migrationsDirectory); err != nil {
 			t.Errorf("could not write to file %v: %v", fp, err)
 		}
 
