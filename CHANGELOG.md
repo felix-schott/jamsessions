@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Calendar Versioning](https://calver.org/) (`YYYY.MM.MICRO-TAG`).
 
+## [v2024.10.4-beta] - 2024-10-30
+
+### Fixed
+
+- Several small bug fixes in frontend (PR [#38](https://github.com/felix-schott/jamsessions/pull/38)), backend (PRs [#37](https://github.com/felix-schott/jamsessions/pull/37), [#40](https://github.com/felix-schott/jamsessions/pull/40)) and deployment code (PR [#39](https://github.com/felix-schott/jamsessions/pull/39))
+
 ## [v2024.10.3-beta] - 2024-10-29
 
 ### Added
