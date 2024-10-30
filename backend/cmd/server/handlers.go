@@ -286,7 +286,7 @@ func PostSession(c *fuego.ContextWithBody[types.SessionPropertiesWithVenue]) (ty
 		}
 		sessionJson = []byte(strings.Replace(string(sessionJson), "999999", "$new_id", -1))
 
-		cmd = fmt.Sprintf("new_id=$(dbcli insert venue '%s');\n"+`dbcli insert session "%s";`, venueJson, strings.ReplaceAll(string(sessionJson), `"`, `\"`))
+		cmd = fmt.Sprintf("new_id=$(dbcli insert venue '%s');\n"+`dbcli insert session "%s";`, strings.ReplaceAll(string(venueJson), "'", `\'`), strings.ReplaceAll(string(sessionJson), `"`, `\"`))
 		title = fmt.Sprintf("insert_venue_%v_session_%v", *payload.VenueName, *payload.SessionName)
 		slog.Info("PostSession", "mode", "sessionAndVenue", "cmd", cmd)
 	} else {
@@ -295,7 +295,7 @@ func PostSession(c *fuego.ContextWithBody[types.SessionPropertiesWithVenue]) (ty
 			slog.Error("PostSession", "msg", err, "props", "session")
 			return types.SessionFeature[types.SessionProperties]{}, errors.New("an unknown error occured")
 		}
-		cmd = fmt.Sprintf("dbcli insert session '%v'", string(sessionJson))
+		cmd = fmt.Sprintf("dbcli insert session '%v'", strings.ReplaceAll(string(sessionJson), "'", `\'`))
 		title = fmt.Sprintf("insert_session_%v", *payload.SessionName)
 		slog.Info("PostSession", "mode", "sessionOnly", "cmd", cmd)
 	}
@@ -322,7 +322,7 @@ func PatchSessionById(c *fuego.ContextWithBody[types.SessionProperties]) (types.
 		slog.Error("PatchSessionById", "id", id, "msg", err)
 		return types.SessionFeature[types.SessionProperties]{}, errors.New("an unknown error occured")
 	}
-	cmd := fmt.Sprintf("dbcli update session %v '%s'", id, j)
+	cmd := fmt.Sprintf("dbcli update session %v '%s'", id, strings.ReplaceAll(string(j), "'", `\'`))
 	return types.SessionFeature[types.SessionProperties]{}, writeMigration(cmd, fmt.Sprintf("update_session_%v", id), migrationsDirectory)
 }
 
@@ -347,7 +347,7 @@ func PostCommentForSessionById(c *fuego.ContextWithBody[CommentBody]) (types.Ses
 	if err != nil {
 		return types.SessionFeature[types.SessionProperties]{}, err
 	}
-	cmd := fmt.Sprintf("dbcli insert comment '%s'", j)
+	cmd := fmt.Sprintf("dbcli insert comment '%s'", strings.ReplaceAll(string(j), "'", `\'`))
 	if err := writeMigration(cmd, fmt.Sprintf("insert_comment_session_%v", id), migrationsDirectory); err != nil {
 		return types.SessionFeature[types.SessionProperties]{}, err
 	}
@@ -409,7 +409,7 @@ func PostVenue(c *fuego.ContextWithBody[types.VenueProperties]) (types.VenueFeat
 		slog.Error("PostVenue", "msg", err)
 		return types.VenueFeature{}, errors.New("an unknown error occured")
 	}
-	cmd := fmt.Sprintf("dbcli insert venue '%s'", j)
+	cmd := fmt.Sprintf("dbcli insert venue '%s'", strings.ReplaceAll(string(j), "'", `\'`))
 	if err := writeMigration(cmd, "insert_venue_"+*payload.VenueName, migrationsDirectory); err != nil {
 		return types.VenueFeature{}, err
 	}
@@ -435,7 +435,7 @@ func PatchVenueById(c *fuego.ContextWithBody[types.VenueProperties]) (types.Venu
 		slog.Error("PatchVenueById", "id", id, "msg", err)
 		return types.VenueFeature{}, errors.New("an unknown error occured")
 	}
-	cmd := fmt.Sprintf("dbcli update venue %v '%s'", id, j)
+	cmd := fmt.Sprintf("dbcli update venue %v '%s'", id, strings.ReplaceAll(string(j), "'", `\'`))
 	return types.VenueFeature{}, writeMigration(cmd, fmt.Sprintf("update_venue_%v", id), migrationsDirectory)
 }
 
@@ -457,7 +457,7 @@ func writeMigration(cmd string, title string, migrationsDirectory string) error 
 		return errors.New("an unknown error occured")
 	}
 
-	fp := filepath.Join(migrationsDirectory, fmt.Sprintf("%v_%v_%v.sh", time.Now().UTC().Format("20060102_150405"), time.Now().Nanosecond(), strings.ReplaceAll(title, " ", "_")))
+	fp := filepath.Join(migrationsDirectory, fmt.Sprintf("%v_%v_%v.sh", time.Now().UTC().Format("20060102_150405"), time.Now().Nanosecond(), strings.ReplaceAll(strings.ReplaceAll(title, " ", "_"), "'", "")))
 	slog.Info("writing migration", "filepath", fp)
 	os.WriteFile(fp, []byte("#!/usr/bin/env bash\n\n"+cmd), fs.FileMode(int(0755)))
 	return nil
