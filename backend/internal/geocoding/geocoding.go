@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"time"
@@ -39,28 +38,37 @@ var client = &http.Client{Transport: tr}
 type NominatimDownError struct {
 	StatusCode int
 	Body       []byte
+	Err        error
 }
 
 func (r NominatimDownError) Error() string {
-	return fmt.Sprintf("Nominatim unavailable (http status: %d, body: %s)", r.StatusCode, r.Body)
+	return fmt.Sprintf("Nominatim unavailable (http status: %d, body: %s, error: %v)", r.StatusCode, r.Body, r.Err)
 }
 
-func serviceIsHealthy() (bool, NominatimDownError) {
+// Returns a NominatimDownError if the service is not healthy, otherwise nil
+func serviceIsHealthy() error {
 	resp, err := client.Get("https://nominatim.openstreetmap.org/status")
+	var b []byte
 	if err != nil {
-		b, err := io.ReadAll(resp.Body)
+		b, err = io.ReadAll(resp.Body)
 		if err != nil {
-			return false, NominatimDownError{StatusCode: resp.StatusCode, Body: []byte{}}
+			return NominatimDownError{StatusCode: resp.StatusCode, Err: err}
 		}
-		return false, NominatimDownError{StatusCode: resp.StatusCode, Body: b}
+		return NominatimDownError{StatusCode: resp.StatusCode, Body: b}
 	}
-	slog.Error("nominatimDown", "status", resp.StatusCode)
-	return resp.StatusCode == 200, NominatimDownError{StatusCode: resp.StatusCode, Body: []byte{}}
+	if resp.StatusCode != 200 {
+		b, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return NominatimDownError{StatusCode: resp.StatusCode, Err: err}
+		}
+		return NominatimDownError{StatusCode: resp.StatusCode, Body: b}
+	}
+	return nil
 }
 
 func Geocode(street string, city string, postcode string) (*geom.Point, error) {
-	healthy, err := serviceIsHealthy()
-	if !healthy {
+	err := serviceIsHealthy()
+	if err != nil {
 		return nil, err
 	}
 

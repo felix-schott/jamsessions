@@ -3,7 +3,7 @@ name: Run backend test suite
 on:
   pull_request:
     paths:
-      - "backend/*"
+      - "backend/**"
 
 jobs:
   test-backend:
