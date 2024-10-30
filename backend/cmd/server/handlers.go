@@ -13,6 +13,7 @@ import (
 	"time"
 
 	dbutils "github.com/felix-schott/jamsessions/backend/internal/db"
+	migrationutils "github.com/felix-schott/jamsessions/backend/internal/migrations"
 	types "github.com/felix-schott/jamsessions/backend/internal/types"
 	"github.com/go-fuego/fuego"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -286,7 +287,7 @@ func PostSession(c *fuego.ContextWithBody[types.SessionPropertiesWithVenue]) (ty
 		}
 		sessionJson = []byte(strings.Replace(string(sessionJson), "999999", "$new_id", -1))
 
-		cmd = fmt.Sprintf("new_id=$(dbcli insert venue '%s');\n"+`dbcli insert session "%s";`, strings.ReplaceAll(string(venueJson), "'", `\'`), strings.ReplaceAll(string(sessionJson), `"`, `\"`))
+		cmd = fmt.Sprintf(`new_id=$(dbcli insert venue "%s");`+"\n"+`dbcli insert session "%s";`, venueJson, sessionJson)
 		title = fmt.Sprintf("insert_venue_%v_session_%v", *payload.VenueName, *payload.SessionName)
 		slog.Info("PostSession", "mode", "sessionAndVenue", "cmd", cmd)
 	} else {
@@ -295,12 +296,13 @@ func PostSession(c *fuego.ContextWithBody[types.SessionPropertiesWithVenue]) (ty
 			slog.Error("PostSession", "msg", err, "props", "session")
 			return types.SessionFeature[types.SessionProperties]{}, errors.New("an unknown error occured")
 		}
-		cmd = fmt.Sprintf("dbcli insert session '%v'", strings.ReplaceAll(string(sessionJson), "'", `\'`))
+		cmd = fmt.Sprintf(`dbcli insert session "%s"`, sessionJson)
 		title = fmt.Sprintf("insert_session_%v", *payload.SessionName)
 		slog.Info("PostSession", "mode", "sessionOnly", "cmd", cmd)
 	}
-	if err := writeMigration(cmd, title, migrationsDirectory); err != nil {
-		return types.SessionFeature[types.SessionProperties]{}, err
+	if _, err := migrationutils.WriteMigration(cmd, title, migrationsDirectory); err != nil {
+		slog.Error("PostSession", "msg", err)
+		return types.SessionFeature[types.SessionProperties]{}, errors.New("an unknown error occurred")
 	}
 	c.SetStatus(201)
 	return types.SessionFeature[types.SessionProperties]{}, nil
@@ -322,8 +324,12 @@ func PatchSessionById(c *fuego.ContextWithBody[types.SessionProperties]) (types.
 		slog.Error("PatchSessionById", "id", id, "msg", err)
 		return types.SessionFeature[types.SessionProperties]{}, errors.New("an unknown error occured")
 	}
-	cmd := fmt.Sprintf("dbcli update session %v '%s'", id, strings.ReplaceAll(string(j), "'", `\'`))
-	return types.SessionFeature[types.SessionProperties]{}, writeMigration(cmd, fmt.Sprintf("update_session_%v", id), migrationsDirectory)
+	cmd := fmt.Sprintf(`dbcli update session %v "%s"`, id, j)
+	if _, err := migrationutils.WriteMigration(cmd, fmt.Sprintf("update_session_%v", id), migrationsDirectory); err != nil {
+		slog.Error("PatchSessionById", "id", id, "msg", err)
+		return types.SessionFeature[types.SessionProperties]{}, errors.New("an unknown error occurred")
+	}
+	return types.SessionFeature[types.SessionProperties]{}, nil
 }
 
 type CommentBody struct {
@@ -347,9 +353,10 @@ func PostCommentForSessionById(c *fuego.ContextWithBody[CommentBody]) (types.Ses
 	if err != nil {
 		return types.SessionFeature[types.SessionProperties]{}, err
 	}
-	cmd := fmt.Sprintf("dbcli insert comment '%s'", strings.ReplaceAll(string(j), "'", `\'`))
-	if err := writeMigration(cmd, fmt.Sprintf("insert_comment_session_%v", id), migrationsDirectory); err != nil {
-		return types.SessionFeature[types.SessionProperties]{}, err
+	cmd := fmt.Sprintf(`dbcli insert comment "%s"`, j)
+	if _, err := migrationutils.WriteMigration(cmd, fmt.Sprintf("insert_comment_session_%v", id), migrationsDirectory); err != nil {
+		slog.Error("PostCommentForSessionById", "id", id, "msg", err)
+		return types.SessionFeature[types.SessionProperties]{}, errors.New("an unknown error occurred")
 	}
 	c.SetStatus(201)
 	return types.SessionFeature[types.SessionProperties]{}, nil
@@ -395,7 +402,12 @@ func DeleteSessionById(c *fuego.ContextNoBody) (types.SessionFeature[types.Sessi
 		return types.SessionFeature[types.SessionProperties]{}, fuego.BadRequestError{Detail: fmt.Sprintf("Please provide a numeric ID ('/jamsession/{id}'), got: %v", c.PathParam("id"))}
 	}
 	cmd := fmt.Sprintf("dbcli delete session %v", id)
-	return types.SessionFeature[types.SessionProperties]{}, writeMigration(cmd, fmt.Sprintf("delete_session_%v", id), migrationsDirectory)
+	if _, err := migrationutils.WriteMigration(cmd, fmt.Sprintf("delete_session_%v", id), migrationsDirectory); err != nil {
+
+		slog.Error("DeleteSessionById", "id", id, "msg", err)
+		return types.SessionFeature[types.SessionProperties]{}, errors.New("an unknown error occurred")
+	}
+	return types.SessionFeature[types.SessionProperties]{}, nil
 }
 
 func PostVenue(c *fuego.ContextWithBody[types.VenueProperties]) (types.VenueFeature, error) {
@@ -409,9 +421,10 @@ func PostVenue(c *fuego.ContextWithBody[types.VenueProperties]) (types.VenueFeat
 		slog.Error("PostVenue", "msg", err)
 		return types.VenueFeature{}, errors.New("an unknown error occured")
 	}
-	cmd := fmt.Sprintf("dbcli insert venue '%s'", strings.ReplaceAll(string(j), "'", `\'`))
-	if err := writeMigration(cmd, "insert_venue_"+*payload.VenueName, migrationsDirectory); err != nil {
-		return types.VenueFeature{}, err
+	cmd := fmt.Sprintf(`dbcli insert venue "%s"`, j)
+	if _, err := migrationutils.WriteMigration(cmd, "insert_venue_"+*payload.VenueName, migrationsDirectory); err != nil {
+		slog.Error("PostVenue", "msg", err)
+		return types.VenueFeature{}, errors.New("an unknown error occured")
 	}
 	c.SetStatus(201)
 	return types.VenueFeature{}, nil
@@ -435,8 +448,12 @@ func PatchVenueById(c *fuego.ContextWithBody[types.VenueProperties]) (types.Venu
 		slog.Error("PatchVenueById", "id", id, "msg", err)
 		return types.VenueFeature{}, errors.New("an unknown error occured")
 	}
-	cmd := fmt.Sprintf("dbcli update venue %v '%s'", id, strings.ReplaceAll(string(j), "'", `\'`))
-	return types.VenueFeature{}, writeMigration(cmd, fmt.Sprintf("update_venue_%v", id), migrationsDirectory)
+	cmd := fmt.Sprintf(`dbcli update venue %v "%s"`, id, j)
+	if _, err := migrationutils.WriteMigration(cmd, fmt.Sprintf("update_venue_%v", id), migrationsDirectory); err != nil {
+		slog.Error("PatchVenueById", "msg", err)
+		return types.VenueFeature{}, errors.New("an unknown error occured")
+	}
+	return types.VenueFeature{}, nil
 }
 
 func DeleteVenueById(c *fuego.ContextNoBody) (types.VenueFeature, error) {
@@ -447,18 +464,9 @@ func DeleteVenueById(c *fuego.ContextNoBody) (types.VenueFeature, error) {
 		return types.VenueFeature{}, fuego.BadRequestError{Detail: fmt.Sprintf("Please provide a numeric ID ('/jamsession/{id}'), got: %v", c.PathParam("id"))}
 	}
 	cmd := fmt.Sprintf("dbcli delete venue %v", id)
-	return types.VenueFeature{}, writeMigration(cmd, fmt.Sprintf("delete_venue_%v", id), migrationsDirectory)
-}
-
-// helper func - writes the provided command to a timestamped file in the $MIGRATIONS_DIRECTORY. 'route' is solely for logging purposes.
-func writeMigration(cmd string, title string, migrationsDirectory string) error {
-	if migrationsDirectory == "" {
-		slog.Error("migrationsDirectory is not set")
-		return errors.New("an unknown error occured")
+	if _, err := migrationutils.WriteMigration(cmd, fmt.Sprintf("delete_venue_%v", id), migrationsDirectory); err != nil {
+		slog.Error("DeleteVenueById", "msg", err)
+		return types.VenueFeature{}, errors.New("an unknown error occured")
 	}
-
-	fp := filepath.Join(migrationsDirectory, fmt.Sprintf("%v_%v_%v.sh", time.Now().UTC().Format("20060102_150405"), time.Now().Nanosecond(), strings.ReplaceAll(strings.ReplaceAll(title, " ", "_"), "'", "")))
-	slog.Info("writing migration", "filepath", fp)
-	os.WriteFile(fp, []byte("#!/usr/bin/env bash\n\n"+cmd), fs.FileMode(int(0755)))
-	return nil
+	return types.VenueFeature{}, nil
 }
