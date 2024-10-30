@@ -98,7 +98,6 @@
 				genres: Array.from(document.querySelectorAll('.genre-checkbox:checked')).map(
 					(i) => i.id.replace('session-genre-', '') as Genre
 				),
-				session_comments: [],
 				session_website: sessionWebsite
 			};
 			if (venueParams) {
