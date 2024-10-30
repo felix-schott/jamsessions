@@ -64,7 +64,6 @@ export interface SessionProperties {
 	start_time_utc: Date | string
 	interval: Interval
 	duration_minutes: number
-	session_comments: string[]
 	session_website: string
 	rating?: number
 	dt_updated_utc?: Date
