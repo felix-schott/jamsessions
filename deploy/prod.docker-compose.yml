@@ -11,6 +11,8 @@ services:
       POSTGRES_DB: $POSTGRES_DB
       READ_ONLY_PASSWORD: $READ_ONLY_PASSWORD
       READ_WRITE_PASSWORD: $READ_WRITE_PASSWORD
+    ports:
+      - "127.0.0.1:$LOCAL_DB_PORT:5432"
     healthcheck:
       test: ["CMD-SHELL", "sh -c 'pg_isready -U read_write -d ${POSTGRES_DB}'"]
       interval: 10s
@@ -24,7 +26,7 @@ services:
     volumes:
       - "$PWD/migrations:/app/migrations"
     environment:
-      DB_URL: "host=prod_db port=5432 user=read_write password=${READ_WRITE_PASSWORD} dbname=${POSTGRES_DB} sslmode=disable"
+      DB_URL: "host=prod_db port=5432 user=read_only password=${READ_ONLY_PASSWORD} dbname=${POSTGRES_DB} sslmode=disable"
       MIGRATIONS_DIRECTORY: /app/migrations
       MIGRATIONS_SUGGESTIONS: /app/migrations/suggestions
       SERVER_ADDRESS: 0.0.0.0:80

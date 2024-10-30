@@ -7,10 +7,10 @@
 # if you're not running this script as part of the production setup (see deploy/install.sh)
 # make sure the dbcli binary is on your PATH
 
-set -euo pipefail
+set -eo pipefail
 
 # load .env file if it exists
-[[ ! -f .env ]] || export $(grep -v '^#' .env | xargs)
+[[ ! -f .env ]] || set -a && source .env && set +a
 
 # if there is a local bin directory (normal production setup), add to PATH
 [[ -d "$PWD/bin" ]] && export PATH=$PATH:$PWD/bin
@@ -21,7 +21,7 @@ if [ -z "$( ls -Ap $MIGRATIONS_DIRECTORY | grep -v / )" ]
 then # list all files in the directory (make ls append / to directories, then filter)
    echo "The directory $MIGRATIONS_DIRECTORY is empty, no migrations to run" 1>&2;
 else
-  if [ $1 == "-y" ]
+  if [[ "$1" == "-y" ]]
   then
     echo "Running in non-interactive mode." 1>&2;
     choice="y"
