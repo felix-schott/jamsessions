@@ -261,7 +261,7 @@
 								{/each}
 							</select>
 						</div>
-						<label for="description"
+						<label for="description" class="inline"
 							>Description <textarea
 								id="description"
 								required
@@ -274,7 +274,7 @@
 					Main genre(s)
 					<div class="checkboxes">
 						{#each Object.values(Genre) as genre}
-							{#if genre != 'ANY'}
+							{#if genre != 'Any'}
 								<label for="session-genre-{genre}"
 									><input
 										type="checkbox"
@@ -329,10 +329,20 @@
 
 	input {
 		max-width: 12em;
+		margin-left: 1em;
 	}
 
 	@media (max-width: 480px) {
-		.vertical label {
+		input {
+			margin-left: 0;
+			max-width: 9em;
+		}
+
+		textarea {
+			width: 100%;
+		}
+
+		label.inline {
 			display: inline-block;
 		}
 	}

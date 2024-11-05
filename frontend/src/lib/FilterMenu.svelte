@@ -49,6 +49,7 @@
 		$filterMenuVisible = false;
 	}}
 >
+	<h2 style="font-size: large;">Filter by genre/backline</h2>
 	<table>
 		<tbody>
 			<tr>
