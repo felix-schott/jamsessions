@@ -20,74 +20,67 @@
 	};
 </script>
 
-{#if propertiesList.length == 1}
-	<Popup {id} title="Click to expand" blur={true} {onclick} {onclose}>
-		{#snippet heading()}
+<Popup {id} title="Click to expand" {onclick} {onclose}>
+	{#snippet heading()}
+		{#if propertiesList.length > 1}
+			<div class="venue-name-multi">
+				<b>{propertiesList[0].venue_name}</b>
+			</div>
+		{:else}
 			<span onclick={() => onClick(propertiesList[0].session_id!)}>
 				<b>{propertiesList[0].session_name}</b> at <b>{propertiesList[0].venue_name}</b>
 			</span>
-		{/snippet}
-		{#snippet content()}
-			<span>
-				<div
-					style="display: flex; flex-direction: column;"
-					onclick={() => onClick(propertiesList[0].session_id!)}
-				>
-					<div>
-						<TimeIcon title="Time of event" /><span style="margin-left: 0.5em;">
-							{new Date(propertiesList[0].start_time_utc).toLocaleTimeString()} -
-							{new Date(
-								new Date(propertiesList[0].start_time_utc).getTime() +
-									propertiesList[0].duration_minutes * 60000
-							).toLocaleTimeString()}
-						</span>
-					</div>
-					<div>
-						<FileTrayIcon title="Genre" /><span style="margin-left: 0.5em;">
-							{propertiesList[0].genres.map((i) => i.replace('_', ' ')).join(', ')}
-						</span>
-					</div>
-				</div>
-			</span>
-		{/snippet}
-	</Popup>
-{:else}
-	<Popup {id} title="Click to expand" {onclick} {onclose}>
-		{#snippet heading()}
-			<div style="font-size: larger; margin-bottom: 0.2em;">
-				<b>{propertiesList[0].venue_name}</b>
-			</div>
-		{/snippet}
-		{#snippet content()}
-			<span>
-				<div style="display: flex; flex-direction: column;">
-					{#each propertiesList as properties, idx}
-						<span style="margin-top: 0.4em;" onclick={() => onClick(properties.session_id!)}>
-							<div>
-								<b>{properties.session_name}</b><br />
-								<TimeIcon title="Time of event" /><span style="margin-left: 0.5em;">
-									{new Date(properties.start_time_utc).toLocaleTimeString()} -
-									{new Date(
-										new Date(properties.start_time_utc).getTime() +
-											properties.duration_minutes * 60000
-									).toLocaleTimeString()}
-								</span>
-							</div>
-							<div>
-								<FileTrayIcon title="Genre" /><span style="margin-left: 0.5em;">
-									{properties.genres.map((i) => i.replace('_', ' ')).join(', ')}
-								</span>
-							</div>
-							<div style="text-align: right; padding: 0.3em;">
-								<i>View more ...</i>
-							</div>
-							<!-- {#if idx !== propertiesList.length - 1}
+		{/if}
+	{/snippet}
+	{#snippet content()}
+		<span>
+			<div style="display: flex; flex-direction: column;">
+				{#each propertiesList as properties, idx}
+					<span style="margin-top: 0.4em;" onclick={() => onClick(properties.session_id!)}>
+						{#if propertiesList.length > 1}
+							<b>{properties.session_name}</b><br />
+						{/if}
+						<table>
+							<tbody>
+								<tr
+									><td><TimeIcon title="Time of event" /></td><td>
+										{new Date(properties.start_time_utc).toLocaleTimeString()} -
+										{new Date(
+											new Date(properties.start_time_utc).getTime() +
+												properties.duration_minutes * 60000
+										).toLocaleTimeString()}</td
+									></tr
+								>
+								<tr
+									><td><FileTrayIcon title="Genre" /></td>
+									<td>{properties.genres.map((i) => i.replace('_', ' ')).join(', ')}</td>
+								</tr>
+							</tbody>
+						</table>
+						<div style="text-align: right; padding: 0.3em;">
+							<i>View more ...</i>
+						</div>
+						<!-- {#if idx !== propertiesList.length - 1}
 								<hr />
 							{/if} -->
-						</span>
-					{/each}
-				</div>
-			</span>
-		{/snippet}
-	</Popup>
-{/if}
+					</span>
+				{/each}
+			</div>
+		</span>
+	{/snippet}
+</Popup>
+
+<style>
+	td {
+		vertical-align: top;
+	}
+
+	td:first-child {
+		padding-top: 0.2em;
+	}
+
+	.venue-name-multi {
+		font-size: larger;
+		margin-bottom: 0.2em;
+	}
+</style>

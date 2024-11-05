@@ -30,7 +30,7 @@ export interface VenueProperties {
 }
 
 export enum Genre {
-	ANY = 'ANY',
+	ANY = 'Any',
 	STRAIGHT_AHEAD = 'Straight-Ahead_Jazz',
 	MODERN_JAZZ = 'Modern_Jazz',
 	TRAD_JAZZ = 'Trad_Jazz',
