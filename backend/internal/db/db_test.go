@@ -211,3 +211,23 @@ func TestInsertAndRetrieveComment(t *testing.T) {
 		t.Errorf("expected returned author to match the inserted comment record")
 	}
 }
+
+func TestGetSessionsByDateRange(t *testing.T) {
+	j, err := queries.GetSessionsByDateRangeAsGeoJSON(ctx, GetSessionsByDateRangeAsGeoJSONParams{
+		StartDate: pgtype.Date{Time: time.Date(2023, 12, 31, 0, 0, 0, 0, time.UTC), Valid: true},
+		EndDate:   pgtype.Date{Time: time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC), Valid: true},
+	})
+	if err != nil {
+		t.Errorf("failed to retrieve session by date range: %v", err)
+	}
+
+	var result types.SessionWithVenueFeatureCollection
+	json.Unmarshal(j, &result)
+	if len(result.Features) == 0 {
+		t.Errorf("expected at least 1 feature, got %v", len(result.Features))
+		t.FailNow()
+	}
+	if *result.Features[0].Properties.SessionID != fixtureSessionId {
+		t.Errorf("expected returned session (%v) to match the inserted fixture (%v)", *result.Features[0].Properties.SessionID, fixtureSessionId)
+	}
+}
