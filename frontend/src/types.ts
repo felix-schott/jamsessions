@@ -6,6 +6,8 @@ export enum MapLayer {
     VENUES
 }
 
+export type TabOptions = "map" | "list";
+
 export enum Backline {
 	PA = 'PA', 
 	GUITAR_AMP = 'Guitar_Amp', 
@@ -14,19 +16,6 @@ export enum Backline {
 	DRUMS = 'Drums', 
 	MIC = 'Microphone', 
 	MISC_PERCUSSION = 'MiscPercussion',
-}
-
-export interface VenueProperties {
-    venue_id?: number
-	venue_name: string
-	address_first_line: string
-	address_second_line?: string
-	city: string
-    postcode: string
-	venue_website: string
-	backline: Backline[]
-	venue_comments?: string[]
-	venue_dt_updated_utc?: Date
 }
 
 export enum Genre {
@@ -53,6 +42,19 @@ export enum Interval {
 	THIRDOFMONTH = 'ThirdOfMonth' ,
 	FOURTHOFMONTH = 'FourthOfMonth', 
 	LASTOFMONTH = 'LastOfMonth'
+}
+
+export interface VenueProperties {
+    venue_id?: number
+	venue_name: string
+	address_first_line: string
+	address_second_line?: string
+	city: string
+    postcode: string
+	venue_website: string
+	backline: Backline[]
+	venue_comments?: string[]
+	venue_dt_updated_utc?: Date
 }
 
 export interface SessionProperties {

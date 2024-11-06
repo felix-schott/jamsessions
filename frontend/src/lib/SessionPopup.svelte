@@ -44,11 +44,11 @@
 							<tbody>
 								<tr
 									><td><TimeIcon title="Time of event" /></td><td>
-										{new Date(properties.start_time_utc).toLocaleTimeString()} -
+										{new Date(properties.start_time_utc).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} -
 										{new Date(
 											new Date(properties.start_time_utc).getTime() +
 												properties.duration_minutes * 60000
-										).toLocaleTimeString()}</td
+										).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</td
 									></tr
 								>
 								<tr

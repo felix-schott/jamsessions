@@ -3,16 +3,21 @@
 	import { onMount } from 'svelte';
 	import {
 		loading,
-		venuesById,
 		selectedSessions,
 		filterMenuVisible,
 		visibleLayer,
 		infoVisible
 	} from '../stores';
-	import { getSessions, getVenues } from '../api';
+	import { getSessions } from '../api';
 	import { MapLayer, type SessionFeatureCollection, Genre, Backline } from '../types';
 	import SettingsIcon from '../lib/icons/SettingsIcon.svelte';
 	import InfoIcon from '../lib/icons/InfoIcon.svelte';
+
+	interface Props {
+		positionRelative: boolean
+	}
+
+	let { positionRelative }: Props = $props();
 
 	const today = new Date();
 	const todayString = today.toISOString().slice(0, 10);
@@ -22,11 +27,11 @@
 		$loading = true;
 		window.sessionStorage.setItem('selectedDateStr', selectedDateStr);
 		try {
-			$selectedSessions = (await getSessions({
+			$selectedSessions = await getSessions({
 				date: new Date(selectedDateStr),
 				backline: window.sessionStorage.getItem('selectedBackline')?.split(',') as Backline[],
 				genre: window.sessionStorage.getItem('selectedGenre') as Genre
-			})) as SessionFeatureCollection;
+			});
 		} catch (e) {
 			alert('An error occured when waiting for data from the server: ' + (e as Error).message);
 			throw e;
@@ -47,7 +52,7 @@
 	});
 </script>
 
-<div class="top-bar vertically-centered">
+<div class="top-bar vertically-centered" class:relative={positionRelative}>
 	<span
 		class="title clickable"
 		title="About this website"
@@ -87,14 +92,18 @@ in <b>London</b><InfoIcon
 		top: 0;
 		left: 0;
 		right: 0;
-		/* height: 8%; */
-		max-height: 3rem;
+		/* height: 8%;
+		max-height: 5em; */
 		padding: 1em 1.5em;
 		background: rgba(0, 0, 0, 0.4);
 		padding: 1em;
 		color: whitesmoke;
 		justify-content: space-between;
 		font-size: x-large;
+	}
+
+	.relative {
+		position: relative;
 	}
 
 	@media (max-width: 480px) {

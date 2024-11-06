@@ -5,6 +5,7 @@
 	import 'ol/ol.css';
 	import { Feature } from 'ol';
 	import { Map, View } from 'ol';
+	import Zoom from 'ol/control/Zoom';
 	import type Point from 'ol/geom/Point';
 	import Overlay from 'ol/Overlay';
 	import { fromLonLat, useGeographic } from 'ol/proj';
@@ -30,11 +31,17 @@
 	import SessionPopup from './SessionPopup.svelte';
 	import Message from './Message.svelte';
 
+	interface Props {
+		background: boolean;
+	}
+
+	let { background }: Props = $props();
+
 	type SessionsByVenue = { [key: number]: Feature[] };
 
 	// initialise variables
-	let map: Map;
-	let view: View;
+	let map: Map | undefined = $state(undefined);
+	let view: View | undefined = $state(undefined);
 
 	// const baseLayer = new WebGLTile({
 	//     source: new PMTilesRasterSource({
@@ -58,8 +65,25 @@
 
 	// reactivity - whenever the stores change (and the condition evaluates to true, the respective render function is called)
 	$effect(() => {
-		if ($visibleLayer == MapLayer.SESSIONS && $selectedSessions !== null) renderSessions();
-	})
+		if (map && $visibleLayer == MapLayer.SESSIONS && $selectedSessions !== null) renderSessions();
+	});
+
+	$effect(() => {
+		if (map) {
+			if (background) {
+				// hide controls
+				document.querySelectorAll('.ol-control').forEach((elem) => {
+					(elem as HTMLElement).style.display = 'none';
+				});
+				// remove popups
+				map.getOverlays().forEach(o => map!.removeOverlay(o));
+			} else {
+				document.querySelectorAll('.ol-control').forEach((elem) => {
+					(elem as HTMLElement).style.display = 'unset';
+				});
+			}
+		}
+	});
 
 	// $: if ($visibleLayer == MapLayer.VENUES && $venues != null) renderVenues();
 
@@ -73,7 +97,7 @@
 	const renderSessions = () => {
 		// clear source before re-render
 		sessionsSource.clear();
-		if (map) map.getOverlays().forEach((i: Overlay) => map.removeOverlay(i));
+		if (map) map.getOverlays().forEach((i: Overlay) => map!.removeOverlay(i));
 
 		// hide venues on map - only one layer can be visible at a time
 		venuesLayer.setVisible(false);
@@ -116,9 +140,9 @@
 			}
 		} else {
 			mount(Message, {
-            				props: { message: 'No sessions found for this day!' },
-            				target: document.body
-            			});
+				props: { message: 'No sessions found for this day!' },
+				target: document.body
+			});
 		}
 	};
 
@@ -128,7 +152,7 @@
 	const renderVenues = () => {
 		// clear source before re-render
 		venuesSource.clear();
-		if (map) map.getOverlays().forEach((i) => map.removeOverlay(i));
+		if (map) map.getOverlays().forEach((i) => map!.removeOverlay(i));
 
 		// hide sessions on map - only one layer can be visible at a time
 		sessionsLayer.setVisible(false);
@@ -183,13 +207,13 @@
 			let popup: Overlay;
 
 			if (isSession) {
-				const sessionPopup = mount(SessionPopup, {
-                					props: {
-                						propertiesList: propertiesList as SessionPropertiesWithVenue[],
-										onclose: () => map.removeOverlay(popup)
-                					},
-                					target: elem
-                				});
+				mount(SessionPopup, {
+					props: {
+						propertiesList: propertiesList as SessionPropertiesWithVenue[],
+						onclose: () => map!.removeOverlay(popup)
+					},
+					target: elem
+				});
 			} else {
 				// new VenuePopup({
 				// 	props: {
@@ -246,28 +270,29 @@
 			// );
 			// observer.observe(elem)
 
-			map.on('click', (ev) => {
-				map.forEachFeatureAtPixel(ev.pixel, (feature, _) => {
-					// remove existing overlays
-					map.getOverlays().forEach((i) => map.removeOverlay(i));
-					// show popup
-					if (feature == features[0]) {
-						// fly to the geometry and right zoom level first, then add the popup and center on that
-						// has to be this sequence, as the center of the popup will be different depending on zoom level
-						flyTo(view, feature.getGeometry()?.getExtent()!, () => {
-							map.addOverlay(popup); // show popup when feature is clicked
-							const rect = elem.getBoundingClientRect();
-							flyTo(
-								view,
-								map.getCoordinateFromPixel([
-									rect.right - (rect.right - rect.left) / 2,
-									rect.top - (rect.top - rect.bottom) / 2
-								])
-							);
-						});
-					}
+			if (map && view)
+				map.on('click', (ev) => {
+					map!.forEachFeatureAtPixel(ev.pixel, (feature, _) => {
+						// remove existing overlays
+						map!.getOverlays().forEach((i) => map!.removeOverlay(i));
+						// show popup
+						if (feature == features[0]) {
+							// fly to the geometry and right zoom level first, then add the popup and center on that
+							// has to be this sequence, as the center of the popup will be different depending on zoom level
+							flyTo(view!, feature.getGeometry()?.getExtent()!, () => {
+								map!.addOverlay(popup); // show popup when feature is clicked
+								const rect = elem.getBoundingClientRect();
+								flyTo(
+									view!,
+									map!.getCoordinateFromPixel([
+										rect.right - (rect.right - rect.left) / 2,
+										rect.top - (rect.top - rect.bottom) / 2
+									])
+								);
+							});
+						}
+					});
 				});
-			});
 		}
 	};
 
@@ -301,8 +326,8 @@
 		map.on('pointermove', (ev) => {
 			// change cursor to pointer on hover
 			if (!ev.dragging) {
-				map.getTargetElement()!.style.cursor = map.hasFeatureAtPixel(
-					map.getEventPixel(ev.originalEvent)
+				map!.getTargetElement()!.style.cursor = map!.hasFeatureAtPixel(
+					map!.getEventPixel(ev.originalEvent)
 				)
 					? 'pointer'
 					: 'grab';
@@ -311,13 +336,29 @@
 	});
 </script>
 
-<div id="map" class="map"></div>
+<div id="map" class:map-background={background} class:map-foreground={!background}></div>
 <div id="popups"></div>
 
 <style>
 	#map {
 		height: 100%;
+		transition: width ease-in-out 1s;
+	}
+
+	.map-foreground {
 		width: 100%;
+		pointer-events: unset;
+	}
+
+	.map-background {
+		width: 50%;
+		pointer-events: none;
+	}
+
+	@media (max-width: 480px) {
+		.map-background {
+			width: 20%;
+		}
 	}
 
 	#popups {
@@ -325,25 +366,25 @@
 	}
 
 	:global(.ol-zoom) {
-		top: unset;
-		bottom: 0.5em;
+		top: 8em;
+		/* bottom: 0.5em; */
 		left: 0.5em;
 	}
 	@media (max-width: 480px) {
 		:global(.ol-zoom) {
-			top: 0.5em;
+			top: 1.5em;
 			right: 0.5em;
-			bottom: unset;
+			/* bottom: unset; */
 			left: unset;
 		}
 
 		:global(.ol-attribution.ol-uncollapsible) {
 			top: 0;
-			left: 0;
-			right: unset;
+			left: unset;
+			right: 0;
 			bottom: unset;
 			border-top-left-radius: 0;
-			border-bottom-right-radius: 4px;
+			border-bottom-left-radius: 4px;
 		}
 	}
 </style>

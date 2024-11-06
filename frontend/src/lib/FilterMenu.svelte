@@ -10,6 +10,7 @@
 
 	let selectedGenre: string;
 	let selectedBackline: string[] = [];
+	let selectedTimeRange: number;
 
 	let onChangeBackline = () => {
 		selectedBackline = Array.from(document.querySelectorAll('#backline-select > option:checked'))
@@ -22,11 +23,11 @@
 		$filterMenuVisible = false;
 		$loading = true;
 		try {
-			$selectedSessions = (await getSessions({
+			$selectedSessions = await getSessions({
 				date: new Date(window.sessionStorage.getItem('selectedDateStr')!),
 				backline: window.sessionStorage.getItem('selectedBackline')?.split(',') as Backline[],
 				genre: window.sessionStorage.getItem('selectedGenre') as Genre
-			})) as SessionFeatureCollection;
+			});
 		} catch (e) {
 			alert('An error occured when waiting for data from the server: ' + (e as Error).message);
 			throw e;
@@ -49,6 +50,17 @@
 		$filterMenuVisible = false;
 	}}
 >
+	<h2 style="font-size: large;">Display sessions for ...</h2>
+	<select
+		title="Select time range"
+		bind:value={selectedTimeRange}
+		onchange={() => {
+			window.sessionStorage.setItem('selectedTimeRange', selectedTimeRange.toString());
+		}}
+	>
+		<option value={0}>the selected date only</option>
+		<option value={7}>plus the week after</option>
+	</select>
 	<h2 style="font-size: large;">Filter by genre/backline</h2>
 	<table>
 		<tbody>
