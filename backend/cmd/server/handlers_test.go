@@ -9,13 +9,13 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
-
-	"regexp"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	geom "github.com/twpayne/go-geom"
@@ -214,6 +214,50 @@ func TestHandlers(t *testing.T) {
 			t.Errorf("expected at least 1 feature in the session feature collection")
 		}
 		checkResultSetForSessionIds(t, []int32{testSession1Id}, body)
+	})
+
+	t.Run("GetSessionsByDateRangeAndGenre", func(t *testing.T) {
+		handler := fuego.HTTPHandler(s, GetSessions)
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/jamsessions?date=%v&genre=Blues", url.QueryEscape("2024-01-01/2024-03-01")), nil)
+		w := httptest.NewRecorder()
+		handler(w, req)
+		res := w.Result()
+		defer res.Body.Close()
+		data, err := io.ReadAll(res.Body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+		var body types.SessionFeatureCollection
+		err = json.Unmarshal(data, &body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+		if len(body.Features) == 0 {
+			t.Errorf("expected at least 1 feature in the session feature collection")
+		}
+		checkResultSetForSessionIds(t, []int32{testSession1Id}, body)
+	})
+
+	t.Run("GetSessionsByDateRangeAndGenre2", func(t *testing.T) {
+		handler := fuego.HTTPHandler(s, GetSessions)
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/jamsessions?date=%v&genre=Jazz-Funk", url.QueryEscape("2024-01-07/2024-01-09")), nil)
+		w := httptest.NewRecorder()
+		handler(w, req)
+		res := w.Result()
+		defer res.Body.Close()
+		data, err := io.ReadAll(res.Body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+		var body types.SessionFeatureCollection
+		err = json.Unmarshal(data, &body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+		if len(body.Features) < 2 {
+			t.Errorf("expected at least 2 feature in the session feature collection")
+		}
+		checkResultSetForSessionIds(t, []int32{testSession1Id, testSession2Id}, body)
 	})
 
 	// test currently failing - not essential, but should be looked into at some point

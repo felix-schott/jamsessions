@@ -311,7 +311,7 @@ WITH t AS (
         interval = 'Weekly' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM $2::date)
     ) 
     OR (
-        interval = 'Fortnightly' AND EXTRACT(DAY FROM $2 - start_time_utc) % 14 = 0
+        interval = 'Fortnightly' AND ($2::date - start_time_utc::date) % 14 = 0
     )
     OR (
         interval = 'FirstOfMonth' AND CEIL (
@@ -334,7 +334,7 @@ WITH t AS (
         ) = 4
     )
     OR interval = 'LastOfMonth' AND (
-        EXTRACT(MONTH FROM $2 + 7) != EXTRACT(MONTH FROM $2) 
+        EXTRACT(MONTH FROM ($2::date + interval '7 day')) != EXTRACT(MONTH FROM $2::date) 
     )
     GROUP BY s.session_id, l.venue_id
 )
@@ -372,7 +372,7 @@ WITH t AS (
         interval = 'Weekly' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM $3::date)
     ) 
     OR (
-        interval = 'Fortnightly' AND EXTRACT(DAY FROM $3 - start_time_utc) % 14 = 0
+        interval = 'Fortnightly' AND ($3::date - start_time_utc::date) % 14 = 0
     )
     OR (
         interval = 'FirstOfMonth' AND CEIL (
@@ -395,7 +395,7 @@ WITH t AS (
         ) = 4
     )
     OR interval = 'LastOfMonth' AND (
-        EXTRACT(MONTH FROM $3 + 7) != EXTRACT(MONTH FROM $3) 
+        EXTRACT(MONTH FROM ($3::date + interval '7 day')) != EXTRACT(MONTH FROM $3::date) 
     )
     GROUP BY s.session_id,l.venue_id
 )
@@ -433,7 +433,7 @@ WITH t AS (
         interval = 'Weekly' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM $2::date)
     ) 
     OR (
-        interval = 'Fortnightly' AND EXTRACT(DAY FROM $2 - start_time_utc) % 14 = 0
+        interval = 'Fortnightly' AND ($2::date - start_time_utc::date) % 14 = 0
     )
     OR (
         interval = 'FirstOfMonth' AND CEIL (
@@ -456,7 +456,7 @@ WITH t AS (
         ) = 4
     )
     OR interval = 'LastOfMonth' AND (
-        EXTRACT(MONTH FROM $2 + 7) != EXTRACT(MONTH FROM $2) 
+        EXTRACT(MONTH FROM ($2::date + interval '7 day')) != EXTRACT(MONTH FROM $2::date) 
     )
     GROUP BY s.session_id, l.venue_id
 )
@@ -492,7 +492,7 @@ WITH t AS (
         interval = 'Weekly' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM $1::date)
     ) 
     OR (
-        interval = 'Fortnightly' AND EXTRACT(DAY FROM $1 - start_time_utc) % 14 = 0
+        interval = 'Fortnightly' AND ($1::date - start_time_utc::date) % 14 = 0 -- check if the number of days between is divisible by 14
     )
     OR (
         interval = 'FirstOfMonth' AND CEIL (
@@ -515,7 +515,7 @@ WITH t AS (
         ) = 4
     )
     OR interval = 'LastOfMonth' AND (
-        EXTRACT(MONTH FROM $1 + 7) != EXTRACT(MONTH FROM $1) 
+        EXTRACT(MONTH FROM ($1::date + interval '7 day')) != EXTRACT(MONTH FROM $1) 
     )
     GROUP BY s.session_id, l.venue_id
 )
@@ -527,6 +527,339 @@ SELECT json_build_object(
 
 func (q *Queries) GetSessionsByDateAsGeoJSON(ctx context.Context, date pgtype.Date) ([]byte, error) {
 	row := q.db.QueryRow(ctx, getSessionsByDateAsGeoJSON, date)
+	var json_build_object []byte
+	err := row.Scan(&json_build_object)
+	return json_build_object, err
+}
+
+const getSessionsByDateRangeAndBacklineAsGeoJSON = `-- name: GetSessionsByDateRangeAndBacklineAsGeoJSON :one
+WITH dates_in_range AS (
+    SELECT generate_series($1::date, $2::date, interval '1 day') d
+), t AS (
+    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+    JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
+    LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
+    WHERE l.backline @> $3
+    AND interval = 'Daily'
+    OR (
+        start_time_utc::date >= $1::date
+        AND start_time_utc::date < $2::date + interval '1 day'
+        AND interval = 'Once'
+    ) 
+    OR (
+        interval = 'Weekly' 
+        AND EXTRACT(dow FROM $1::date) <= EXTRACT(dow FROM s.start_time_utc)
+        AND EXTRACT(dow FROM $2::date) >= EXTRACT(dow FROM s.start_time_utc)
+    ) 
+    OR (
+        interval = 'Fortnightly' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE (dates_in_range.d::date - s.start_time_utc::date) % 14 = 0 
+            -- generate a list of dates between start/end
+            -- check if for any of them the condition is true
+        )
+    )
+    OR (
+        interval = 'FirstOfMonth' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 1
+        ) 
+    )
+    OR (
+        interval = 'SecondOfMonth' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 2
+        ) 
+    )
+    OR (
+        interval = 'ThirdOfMonth' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 3
+        ) 
+    )
+    OR (
+        interval = 'FourthOfMonth' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 4
+        ) 
+    )
+    OR interval = 'LastOfMonth' AND EXISTS (
+        SELECT d
+        FROM dates_in_range
+        WHERE EXTRACT(MONTH FROM (dates_in_range.d + interval '7 day')) != EXTRACT(MONTH FROM dates_in_range.d) 
+    )
+    GROUP BY s.session_id, l.venue_id
+)
+SELECT json_build_object(
+    'type', 'FeatureCollection',
+    'features', json_agg(public.ST_AsGeoJSON(t.*)::json)
+) FROM t
+`
+
+type GetSessionsByDateRangeAndBacklineAsGeoJSONParams struct {
+	StartDate pgtype.Date `json:"start_date"`
+	EndDate   pgtype.Date `json:"end_date"`
+	Backline  []string    `json:"backline"`
+}
+
+func (q *Queries) GetSessionsByDateRangeAndBacklineAsGeoJSON(ctx context.Context, arg GetSessionsByDateRangeAndBacklineAsGeoJSONParams) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getSessionsByDateRangeAndBacklineAsGeoJSON, arg.StartDate, arg.EndDate, arg.Backline)
+	var json_build_object []byte
+	err := row.Scan(&json_build_object)
+	return json_build_object, err
+}
+
+const getSessionsByDateRangeAndGenreAndBacklineAsGeoJSON = `-- name: GetSessionsByDateRangeAndGenreAndBacklineAsGeoJSON :one
+WITH dates_in_range AS (
+    SELECT generate_series($1::date, $2::date, interval '1 day') d
+), t AS (
+    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+    JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
+    LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
+    WHERE s.genres @> $3
+    AND l.backline @> $4
+    AND interval = 'Daily'
+    OR (
+        start_time_utc::date >= $1::date
+        AND start_time_utc::date < $2::date + interval '1 day'
+        AND interval = 'Once'
+    ) 
+    OR (
+        interval = 'Weekly' 
+        AND EXTRACT(dow FROM $1::date) <= EXTRACT(dow FROM s.start_time_utc)
+        AND EXTRACT(dow FROM $2::date) >= EXTRACT(dow FROM s.start_time_utc)
+    ) 
+    OR (
+        interval = 'Fortnightly' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE (dates_in_range.d::date - s.start_time_utc::date) % 14 = 0 
+            -- generate a list of dates between start/end
+            -- check if for any of them the condition is true
+        )
+    )
+    OR (
+        interval = 'FirstOfMonth' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 1
+        ) 
+    )
+    OR (
+        interval = 'SecondOfMonth' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 2
+        ) 
+    )
+    OR (
+        interval = 'ThirdOfMonth' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 3
+        ) 
+    )
+    OR (
+        interval = 'FourthOfMonth' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 4
+        ) 
+    )
+    OR interval = 'LastOfMonth' AND EXISTS (
+        SELECT d
+        FROM dates_in_range
+        WHERE EXTRACT(MONTH FROM (dates_in_range.d + interval '7 day')) != EXTRACT(MONTH FROM dates_in_range.d) 
+    )
+    GROUP BY s.session_id, l.venue_id
+)
+SELECT json_build_object(
+    'type', 'FeatureCollection',
+    'features', json_agg(public.ST_AsGeoJSON(t.*)::json)
+) FROM t
+`
+
+type GetSessionsByDateRangeAndGenreAndBacklineAsGeoJSONParams struct {
+	StartDate pgtype.Date `json:"start_date"`
+	EndDate   pgtype.Date `json:"end_date"`
+	Genres    []string    `json:"genres"`
+	Backline  []string    `json:"backline"`
+}
+
+func (q *Queries) GetSessionsByDateRangeAndGenreAndBacklineAsGeoJSON(ctx context.Context, arg GetSessionsByDateRangeAndGenreAndBacklineAsGeoJSONParams) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getSessionsByDateRangeAndGenreAndBacklineAsGeoJSON,
+		arg.StartDate,
+		arg.EndDate,
+		arg.Genres,
+		arg.Backline,
+	)
+	var json_build_object []byte
+	err := row.Scan(&json_build_object)
+	return json_build_object, err
+}
+
+const getSessionsByDateRangeAndGenreAsGeoJSON = `-- name: GetSessionsByDateRangeAndGenreAsGeoJSON :one
+WITH dates_in_range AS (
+    SELECT generate_series($1::date, $2::date, interval '1 day') d
+), t AS (
+    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+    JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
+    LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
+    WHERE s.genres @> $3 
+    AND interval = 'Daily'
+    OR (
+        start_time_utc::date >= $1::date
+        AND start_time_utc::date < $2::date + interval '1 day'
+        AND interval = 'Once'
+    ) 
+    OR (
+        interval = 'Weekly' 
+        AND EXTRACT(dow FROM $1::date) <= EXTRACT(dow FROM s.start_time_utc)
+        AND EXTRACT(dow FROM $2::date) >= EXTRACT(dow FROM s.start_time_utc)
+    ) 
+    OR (
+        interval = 'Fortnightly' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE (dates_in_range.d::date - s.start_time_utc::date) % 14 = 0 
+            -- generate a list of dates between start/end
+            -- check if for any of them the condition is true
+        )
+    )
+    OR (
+        interval = 'FirstOfMonth' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 1
+        ) 
+    )
+    OR (
+        interval = 'SecondOfMonth' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 2
+        ) 
+    )
+    OR (
+        interval = 'ThirdOfMonth' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 3
+        ) 
+    )
+    OR (
+        interval = 'FourthOfMonth' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 4
+        ) 
+    )
+    OR interval = 'LastOfMonth' AND EXISTS (
+        SELECT d
+        FROM dates_in_range
+        WHERE EXTRACT(MONTH FROM (dates_in_range.d + interval '7 day')) != EXTRACT(MONTH FROM dates_in_range.d) 
+    )
+    GROUP BY s.session_id, l.venue_id
+)
+SELECT json_build_object(
+    'type', 'FeatureCollection',
+    'features', json_agg(public.ST_AsGeoJSON(t.*)::json)
+) FROM t
+`
+
+type GetSessionsByDateRangeAndGenreAsGeoJSONParams struct {
+	StartDate pgtype.Date `json:"start_date"`
+	EndDate   pgtype.Date `json:"end_date"`
+	Genres    []string    `json:"genres"`
+}
+
+func (q *Queries) GetSessionsByDateRangeAndGenreAsGeoJSON(ctx context.Context, arg GetSessionsByDateRangeAndGenreAsGeoJSONParams) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getSessionsByDateRangeAndGenreAsGeoJSON, arg.StartDate, arg.EndDate, arg.Genres)
+	var json_build_object []byte
+	err := row.Scan(&json_build_object)
+	return json_build_object, err
+}
+
+const getSessionsByDateRangeAsGeoJSON = `-- name: GetSessionsByDateRangeAsGeoJSON :one
+WITH dates_in_range AS (
+    SELECT generate_series($1::date, $2::date, interval '1 day') d
+), t AS (
+    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+    JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
+    LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
+    WHERE interval = 'Daily' 
+    OR (
+        start_time_utc::date >= $1::date
+        AND start_time_utc::date < $2::date + interval '1 day'
+        AND interval = 'Once'
+    ) 
+    OR (
+        interval = 'Weekly' 
+        AND EXTRACT(dow FROM $1::date) <= EXTRACT(dow FROM s.start_time_utc)
+        AND EXTRACT(dow FROM $2::date) >= EXTRACT(dow FROM s.start_time_utc)
+    ) 
+    OR (
+        interval = 'Fortnightly' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE (dates_in_range.d::date - s.start_time_utc::date) % 14 = 0 
+            -- generate a list of dates between start/end
+            -- check if for any of them the condition is true
+        )
+    )
+    OR (
+        interval = 'FirstOfMonth' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 1
+        ) 
+    )
+    OR (
+        interval = 'SecondOfMonth' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 2
+        ) 
+    )
+    OR (
+        interval = 'ThirdOfMonth' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 3
+        ) 
+    )
+    OR (
+        interval = 'FourthOfMonth' AND EXISTS (
+            SELECT d
+            FROM dates_in_range
+            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 4
+        ) 
+    )
+    OR interval = 'LastOfMonth' AND EXISTS (
+        SELECT d
+        FROM dates_in_range
+        WHERE EXTRACT(MONTH FROM (dates_in_range.d + interval '7 day')) != EXTRACT(MONTH FROM dates_in_range.d) 
+    )
+    GROUP BY s.session_id, l.venue_id
+)
+SELECT json_build_object(
+    'type', 'FeatureCollection',
+    'features', json_agg(public.ST_AsGeoJSON(t.*)::json)
+) FROM t
+`
+
+type GetSessionsByDateRangeAsGeoJSONParams struct {
+	StartDate pgtype.Date `json:"start_date"`
+	EndDate   pgtype.Date `json:"end_date"`
+}
+
+func (q *Queries) GetSessionsByDateRangeAsGeoJSON(ctx context.Context, arg GetSessionsByDateRangeAsGeoJSONParams) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getSessionsByDateRangeAsGeoJSON, arg.StartDate, arg.EndDate)
 	var json_build_object []byte
 	err := row.Scan(&json_build_object)
 	return json_build_object, err

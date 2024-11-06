@@ -138,35 +138,55 @@ func GetVenues(c *fuego.ContextNoBody) (types.VenueFeatureCollection, error) {
 }
 
 func GetSessions(c *fuego.ContextNoBody) (types.SessionWithVenueFeatureCollection, error) {
+	slog.Info("GetSessions", "date", c.QueryParam("date"), "backline", c.QueryParam("backline"), "genre", c.QueryParam("genre"))
 	queryParams := c.QueryParams()
-	var date time.Time
-	var backline []string
-	var genre string
+	var startDate *time.Time
+	var endDate *time.Time
+	var backline *[]string
+	var genre *string
 	var geojson types.SessionWithVenueFeatureCollection
 
 	invalidKeys := make([]string, 0, len(queryParams))
 	i := 0
 	for k := range queryParams {
 		if k == "date" {
-			dateParsed, err := time.Parse(time.DateOnly, c.QueryParam("date"))
-			if err != nil {
-				return geojson, fuego.BadRequestError{Detail: fmt.Sprintf("failed to parse %v as a date, please provide dates as 'YYYY-MM-DD'", c.QueryParam("date"))}
+			dateRange := strings.Split(c.QueryParam("date"), "/")
+			if len(dateRange) < 1 || len(dateRange) > 2 {
+				return geojson, fuego.BadRequestError{Detail: fmt.Sprintf("failed to parse %v as a date or date range, please provide dates as 'YYYY-MM-DD' or optionally as a range 'YYYY-MM-DD/YYYY-MM-DD'", c.QueryParam("date"))}
 			}
-			date = dateParsed
+			if 1 == len(dateRange) || len(dateRange) == 2 {
+				dateParsed, err := time.Parse(time.DateOnly, dateRange[0])
+				if err != nil {
+					return geojson, fuego.BadRequestError{Detail: fmt.Sprintf("failed to parse %v as a date or date range, please provide dates as 'YYYY-MM-DD' or optionally as a range 'YYYY-MM-DD/YYYY-MM-DD'", c.QueryParam("date"))}
+				}
+				startDate = &dateParsed
+			}
+			if len(dateRange) == 2 {
+				dateParsed, err := time.Parse(time.DateOnly, dateRange[1])
+				if err != nil {
+					return geojson, fuego.BadRequestError{Detail: fmt.Sprintf("failed to parse %v as a date or date range, please provide dates as 'YYYY-MM-DD' or optionally as a range 'YYYY-MM-DD/YYYY-MM-DD'", c.QueryParam("date"))}
+				}
+				endDate = &dateParsed
+			}
+			if startDate == nil {
+				return geojson, fuego.BadRequestError{Detail: fmt.Sprintf("failed to parse %v as a date or date range, please provide dates as 'YYYY-MM-DD' or optionally as a range 'YYYY-MM-DD/YYYY-MM-DD'", c.QueryParam("date"))}
+			}
 		} else if k == "backline" {
-			backline = strings.Split(c.QueryParam("backline"), ",")
-			for _, b := range backline {
+			backlineSlice := strings.Split(c.QueryParam("backline"), ",")
+			for _, b := range backlineSlice {
 				_, ok := backlineStrToEnum[b]
 				if !ok {
 					return geojson, fuego.BadRequestError{Detail: fmt.Sprintf("%v is not a valid value for 'backline'", b)}
 				}
 			}
+			backline = &backlineSlice
 		} else if k == "genre" {
-			genre = c.QueryParam("genre")
-			_, ok := genreStrToEnum[genre]
+			genreParam := c.QueryParam("genre")
+			_, ok := genreStrToEnum[genreParam]
 			if !ok {
 				return geojson, fuego.BadRequestError{Detail: fmt.Sprintf("%v is not a valid value for 'genre'", genre)}
 			}
+			genre = &genreParam
 		} else {
 			invalidKeys = append(invalidKeys, k)
 		}
@@ -178,36 +198,59 @@ func GetSessions(c *fuego.ContextNoBody) (types.SessionWithVenueFeatureCollectio
 
 	var result json.RawMessage
 	var err error
-	slog.Info("GetSessions", "date", c.QueryParam("date"), "backline", c.QueryParam("backline"), "genre", c.QueryParam("genre"))
-	if c.QueryParam("date") == "" && c.QueryParam("backline") == "" && c.QueryParam("genre") == "" { // no params used, no filter
+	if startDate == nil && backline == nil && genre == nil { // no params used, no filter
 		result, err = queries.GetAllSessionsAsGeoJSON(ctx)
-	} else if c.QueryParam("date") != "" && c.QueryParam("backline") != "" && c.QueryParam("genre") != "" { // all available query params are used
+	} else if startDate != nil && endDate == nil && backline != nil && genre != nil { // all available query params are used (single day)
 		result, err = queries.GetSessionsByDateAndGenreAndBacklineAsGeoJSON(ctx, dbutils.GetSessionsByDateAndGenreAndBacklineAsGeoJSONParams{
-			Genres:   []string{genre},
-			Backline: backline,
-			Date:     pgtype.Date{Time: date, Valid: true},
+			Genres:   []string{*genre},
+			Backline: *backline,
+			Date:     pgtype.Date{Time: *startDate, Valid: true},
 		})
-	} else if c.QueryParam("date") != "" && c.QueryParam("backline") != "" && c.QueryParam("genre") == "" { // date and backline are used
+	} else if startDate != nil && endDate != nil && backline != nil && genre != nil { // all available query params are used (date range)
+		result, err = queries.GetSessionsByDateRangeAndGenreAndBacklineAsGeoJSON(ctx, dbutils.GetSessionsByDateRangeAndGenreAndBacklineAsGeoJSONParams{
+			Genres:    []string{*genre},
+			Backline:  *backline,
+			StartDate: pgtype.Date{Time: *startDate, Valid: true},
+			EndDate:   pgtype.Date{Time: *endDate, Valid: true},
+		})
+	} else if startDate != nil && endDate == nil && backline != nil && genre == nil { // single date and backline are used
 		result, err = queries.GetSessionsByDateAndBacklineAsGeoJSON(ctx, dbutils.GetSessionsByDateAndBacklineAsGeoJSONParams{
-			Date:     pgtype.Date{Time: date, Valid: true},
-			Backline: backline,
+			Date:     pgtype.Date{Time: *startDate, Valid: true},
+			Backline: *backline,
 		})
-	} else if c.QueryParam("date") != "" && c.QueryParam("genre") != "" && c.QueryParam("backline") == "" { // date and genre are used
+	} else if startDate != nil && endDate != nil && backline != nil && genre == nil { // date range and backline are used
+		result, err = queries.GetSessionsByDateRangeAndBacklineAsGeoJSON(ctx, dbutils.GetSessionsByDateRangeAndBacklineAsGeoJSONParams{
+			StartDate: pgtype.Date{Time: *startDate, Valid: true},
+			EndDate:   pgtype.Date{Time: *endDate, Valid: true},
+			Backline:  *backline,
+		})
+	} else if startDate != nil && endDate == nil && genre != nil && backline == nil { // single date and genre are used
 		result, err = queries.GetSessionsByDateAndGenreAsGeoJSON(ctx, dbutils.GetSessionsByDateAndGenreAsGeoJSONParams{
-			Date:   pgtype.Date{Time: date, Valid: true},
-			Genres: []string{genre},
+			Date:   pgtype.Date{Time: *startDate, Valid: true},
+			Genres: []string{*genre},
 		})
-	} else if c.QueryParam("genre") != "" && c.QueryParam("backline") != "" && c.QueryParam("date") == "" { // genre and backline are used
+	} else if startDate != nil && endDate != nil && genre != nil && backline == nil { // date range and genre are used
+		result, err = queries.GetSessionsByDateRangeAndGenreAsGeoJSON(ctx, dbutils.GetSessionsByDateRangeAndGenreAsGeoJSONParams{
+			StartDate: pgtype.Date{Time: *startDate, Valid: true},
+			EndDate:   pgtype.Date{Time: *endDate, Valid: true},
+			Genres:    []string{*genre},
+		})
+	} else if genre != nil && backline != nil && startDate == nil { // genre and backline are used
 		result, err = queries.GetSessionsByGenreAndBacklineAsGeoJSON(ctx, dbutils.GetSessionsByGenreAndBacklineAsGeoJSONParams{
-			Genres:   []string{genre},
-			Backline: backline,
+			Genres:   []string{*genre},
+			Backline: *backline,
 		})
-	} else if c.QueryParam("date") != "" {
-		result, err = queries.GetSessionsByDateAsGeoJSON(ctx, pgtype.Date{Time: date, Valid: true})
-	} else if c.QueryParam("backline") != "" {
-		result, err = queries.GetSessionsByBacklineAsGeoJSON(ctx, backline)
+	} else if startDate != nil && endDate == nil {
+		result, err = queries.GetSessionsByDateAsGeoJSON(ctx, pgtype.Date{Time: *startDate, Valid: true})
+	} else if startDate != nil && endDate != nil {
+		result, err = queries.GetSessionsByDateRangeAsGeoJSON(ctx, dbutils.GetSessionsByDateRangeAsGeoJSONParams{
+			StartDate: pgtype.Date{Time: *startDate, Valid: true},
+			EndDate:   pgtype.Date{Time: *endDate, Valid: true},
+		})
+	} else if backline != nil {
+		result, err = queries.GetSessionsByBacklineAsGeoJSON(ctx, *backline)
 	} else { // genre
-		result, err = queries.GetSessionsByGenreAsGeoJSON(ctx, []string{genre})
+		result, err = queries.GetSessionsByGenreAsGeoJSON(ctx, []string{*genre})
 	}
 	if err != nil {
 		return geojson, err
