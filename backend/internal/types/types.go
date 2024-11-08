@@ -50,6 +50,10 @@ func (d Date) Format(s string) string {
 	return t.Format(s)
 }
 
+func (d Date) String() string {
+	return d.Format(time.DateOnly)
+}
+
 type SessionProperties struct {
 	SessionID       *int32     `json:"session_id,omitempty"`
 	SessionName     *string    `json:"session_name,omitempty"`

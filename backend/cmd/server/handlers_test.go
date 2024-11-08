@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"log/slog"
@@ -169,7 +170,7 @@ func TestHandlers(t *testing.T) {
 
 	t.Run("GetSessionsNoDateMatch", func(t *testing.T) {
 		handler := fuego.HTTPHandler(s, GetSessions)
-		req := httptest.NewRequest(http.MethodGet, "/jamsessions?date=2024-01-06", nil)
+		req := httptest.NewRequest(http.MethodGet, "/jamsessions?date=2023-01-06", nil)
 		w := httptest.NewRecorder()
 		handler(w, req)
 		res := w.Result()
@@ -187,6 +188,13 @@ func TestHandlers(t *testing.T) {
 			var sessions = make([]string, len(body.Features))
 			for i, f := range body.Features {
 				sessions[i] = *f.Properties.SessionName
+				if f.Properties.Dates != nil {
+					sessions[i] = sessions[i] + " ("
+					for _, d := range *f.Properties.Dates {
+						sessions[i] = sessions[i] + fmt.Sprint(d)
+					}
+					sessions[i] = sessions[i] + ")"
+				}
 			}
 			t.Errorf("expected no features in the session feature collection, got %v", strings.Join(sessions, ", "))
 		}

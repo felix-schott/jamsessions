@@ -122,12 +122,12 @@ SELECT json_build_object(
 
 -- name: GetSessionsByDateAndGenreAsGeoJSON :one
 WITH t AS (
-    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+    SELECT d.d, s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     LEFT OUTER JOIN london_jam_sessions.sessions_on_date(sqlc.arg(date)::date) d ON d.session_id = s.session_id 
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> sqlc.arg(genres) 
-    GROUP BY s.session_id, l.venue_id
+    GROUP BY s.session_id, l.venue_id, d.d
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -153,12 +153,12 @@ SELECT json_build_object(
 
 -- name: GetSessionsByDateAndBacklineAsGeoJSON :one
 WITH t AS (
-    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+    SELECT d.d, s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     LEFT OUTER JOIN london_jam_sessions.sessions_on_date(sqlc.arg(date)::date) d ON d.session_id = s.session_id
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE l.backline @> sqlc.arg(backline)
-    GROUP BY s.session_id, l.venue_id
+    GROUP BY s.session_id, l.venue_id, d.d
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -183,13 +183,13 @@ SELECT json_build_object(
 
 -- name: GetSessionsByDateAndGenreAndBacklineAsGeoJSON :one
 WITH t AS (
-    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+    SELECT d.d, s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     LEFT OUTER JOIN london_jam_sessions.sessions_on_date(sqlc.arg(date)::date) d ON d.session_id = s.session_id
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> sqlc.arg(genres)
     AND l.backline @> sqlc.arg(backline)
-    GROUP BY s.session_id,l.venue_id
+    GROUP BY s.session_id, l.venue_id, d.d
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',

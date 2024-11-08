@@ -351,12 +351,12 @@ func (q *Queries) GetSessionsByBacklineAsGeoJSON(ctx context.Context, backline [
 
 const getSessionsByDateAndBacklineAsGeoJSON = `-- name: GetSessionsByDateAndBacklineAsGeoJSON :one
 WITH t AS (
-    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+    SELECT d.dates, s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     LEFT OUTER JOIN london_jam_sessions.sessions_on_date($1::date) d ON d.session_id = s.session_id
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE l.backline @> $2
-    GROUP BY s.session_id, l.venue_id
+    GROUP BY s.session_id, l.venue_id, d.dates
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -378,13 +378,13 @@ func (q *Queries) GetSessionsByDateAndBacklineAsGeoJSON(ctx context.Context, arg
 
 const getSessionsByDateAndGenreAndBacklineAsGeoJSON = `-- name: GetSessionsByDateAndGenreAndBacklineAsGeoJSON :one
 WITH t AS (
-    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+    SELECT d.dates, s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     LEFT OUTER JOIN london_jam_sessions.sessions_on_date($1::date) d ON d.session_id = s.session_id
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> $2
     AND l.backline @> $3
-    GROUP BY s.session_id,l.venue_id
+    GROUP BY s.session_id, l.venue_id, d.dates
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -407,12 +407,12 @@ func (q *Queries) GetSessionsByDateAndGenreAndBacklineAsGeoJSON(ctx context.Cont
 
 const getSessionsByDateAndGenreAsGeoJSON = `-- name: GetSessionsByDateAndGenreAsGeoJSON :one
 WITH t AS (
-    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+    SELECT d.dates, s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
     LEFT OUTER JOIN london_jam_sessions.sessions_on_date($1::date) d ON d.session_id = s.session_id 
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> $2 
-    GROUP BY s.session_id, l.venue_id
+    GROUP BY s.session_id, l.venue_id, d.dates
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
