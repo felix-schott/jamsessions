@@ -194,6 +194,8 @@ func TestHandlers(t *testing.T) {
 						sessions[i] = sessions[i] + fmt.Sprint(d)
 					}
 					sessions[i] = sessions[i] + ")"
+				} else {
+					sessions[i] = sessions[i] + " (no date property)"
 				}
 			}
 			t.Errorf("expected no features in the session feature collection, got %v", strings.Join(sessions, ", "))
