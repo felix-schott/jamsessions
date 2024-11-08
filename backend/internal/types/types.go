@@ -42,7 +42,7 @@ func (d *Date) UnmarshalJSON(b []byte) error {
 }
 
 func (d Date) MarshalJSON() ([]byte, error) {
-	return json.Marshal(time.Time(d))
+	return json.Marshal(time.Time(d).Format(time.DateOnly))
 }
 
 func (d Date) Format(s string) string {

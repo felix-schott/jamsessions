@@ -29,7 +29,7 @@ test-geocoding:
 
 test-server:
 	TEST_DB_PORT=$(TEST_DB_PORT) docker compose -f test.docker-compose.yml up test_db -d
-	sleep 5 # wait until the database has started up
+	sleep 7 # wait until the database has started up
 	cd cmd/server && DB_URL=$(DB_URL) go test -run ^TestHandlers || true
 	TEST_DB_PORT=$(TEST_DB_PORT) docker compose -f test.docker-compose.yml down test_db
 	docker system prune -af &> /dev/null

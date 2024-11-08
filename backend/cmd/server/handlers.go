@@ -154,7 +154,7 @@ func GetSessions(c *fuego.ContextNoBody) (types.SessionWithVenueFeatureCollectio
 			if len(dateRange) < 1 || len(dateRange) > 2 {
 				return geojson, fuego.BadRequestError{Detail: fmt.Sprintf("failed to parse %v as a date or date range, please provide dates as 'YYYY-MM-DD' or optionally as a range 'YYYY-MM-DD/YYYY-MM-DD'", c.QueryParam("date"))}
 			}
-			if 1 == len(dateRange) || len(dateRange) == 2 {
+			if len(dateRange) == 1 || len(dateRange) == 2 {
 				dateParsed, err := time.Parse(time.DateOnly, dateRange[0])
 				if err != nil {
 					return geojson, fuego.BadRequestError{Detail: fmt.Sprintf("failed to parse %v as a date or date range, please provide dates as 'YYYY-MM-DD' or optionally as a range 'YYYY-MM-DD/YYYY-MM-DD'", c.QueryParam("date"))}

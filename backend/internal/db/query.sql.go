@@ -275,6 +275,30 @@ func (q *Queries) GetSessionByIdAsGeoJSON(ctx context.Context, sessionID int32) 
 	return st_asgeojson, err
 }
 
+const getSessionIdsByDate = `-- name: GetSessionIdsByDate :many
+SELECT sessions_on_date FROM london_jam_sessions.sessions_on_date($1::date)
+`
+
+func (q *Queries) GetSessionIdsByDate(ctx context.Context, date pgtype.Date) ([]*int32, error) {
+	rows, err := q.db.Query(ctx, getSessionIdsByDate, date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []*int32
+	for rows.Next() {
+		var sessions_on_date *int32
+		if err := rows.Scan(&sessions_on_date); err != nil {
+			return nil, err
+		}
+		items = append(items, sessions_on_date)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getSessionIdsByDateRange = `-- name: GetSessionIdsByDateRange :many
 SELECT sessions_in_date_range FROM london_jam_sessions.sessions_in_date_range($1::date, $2::date)
 `
@@ -410,8 +434,9 @@ func (q *Queries) GetSessionsByDateAndGenreAsGeoJSON(ctx context.Context, arg Ge
 
 const getSessionsByDateAsGeoJSON = `-- name: GetSessionsByDateAsGeoJSON :one
 WITH t AS (
-    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
-    LEFT OUTER JOIN london_jam_sessions.sessions_on_date($1::date) d ON d.session_id = s.session_id
+    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating 
+    FROM london_jam_sessions.sessions_on_date($1::date) d
+    LEFT OUTER JOIN london_jam_sessions.jamsessions s ON d.session_id = s.session_id
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     GROUP BY s.session_id, l.venue_id
@@ -433,8 +458,8 @@ const getSessionsByDateRangeAndBacklineAsGeoJSON = `-- name: GetSessionsByDateRa
 WITH t AS (
     SELECT d.dates, s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating 
     FROM london_jam_sessions.jamsessions s 
-    JOIN london_jam_sessions.sessions_in_date_range($1::date, $2::date) d 
-    ON s.session_id = d.session_id 
+    LEFT OUTER JOIN london_jam_sessions.sessions_in_date_range($1::date, $2::date) d 
+    ON d.session_id = s.session_id 
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE l.backline @> $3
@@ -463,8 +488,8 @@ const getSessionsByDateRangeAndGenreAndBacklineAsGeoJSON = `-- name: GetSessions
 WITH t AS (
     SELECT d.dates, s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating 
     FROM london_jam_sessions.jamsessions s 
-    JOIN london_jam_sessions.sessions_in_date_range($1::date, $2::date) d 
-    ON s.session_id = d.session_id 
+    LEFT OUTER JOIN london_jam_sessions.sessions_in_date_range($1::date, $2::date) d 
+    ON d.session_id = s.session_id 
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> $3
@@ -500,8 +525,8 @@ const getSessionsByDateRangeAndGenreAsGeoJSON = `-- name: GetSessionsByDateRange
 WITH t AS (
     SELECT d.dates, s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating 
     FROM london_jam_sessions.jamsessions s 
-    JOIN london_jam_sessions.sessions_in_date_range($1::date, $2::date) d 
-    ON s.session_id = d.session_id 
+    LEFT OUTER JOIN london_jam_sessions.sessions_in_date_range($1::date, $2::date) d 
+    ON d.session_id = s.session_id 
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> $3
@@ -530,8 +555,8 @@ const getSessionsByDateRangeAsGeoJSON = `-- name: GetSessionsByDateRangeAsGeoJSO
 WITH t AS (
     SELECT d.dates, s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0.0)::real AS rating 
     FROM london_jam_sessions.jamsessions s 
-    JOIN london_jam_sessions.sessions_in_date_range($1::date, $2::date) d 
-    ON s.session_id = d.session_id 
+    LEFT OUTER JOIN london_jam_sessions.sessions_in_date_range($1::date, $2::date) d 
+    ON d.session_id = s.session_id 
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     GROUP BY s.session_id, l.venue_id, d.dates
