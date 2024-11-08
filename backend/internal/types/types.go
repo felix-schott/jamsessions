@@ -1,6 +1,8 @@
 package types
 
 import (
+	"encoding/json"
+	"strings"
 	"time"
 )
 
@@ -28,6 +30,26 @@ type VenueFeature struct {
 	Geometry   Geometry        `json:"geometry"`
 }
 
+type Date time.Time
+
+func (d *Date) UnmarshalJSON(b []byte) error {
+	t, err := time.Parse("2006-01-02", strings.Trim(string(b), `"`))
+	if err != nil {
+		return err
+	}
+	*d = Date(t)
+	return nil
+}
+
+func (d Date) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Time(d))
+}
+
+func (d Date) Format(s string) string {
+	t := time.Time(d)
+	return t.Format(s)
+}
+
 type SessionProperties struct {
 	SessionID       *int32     `json:"session_id,omitempty"`
 	SessionName     *string    `json:"session_name,omitempty"`
@@ -40,6 +62,7 @@ type SessionProperties struct {
 	SessionWebsite  *string    `json:"session_website,omitempty"`
 	DtUpdatedUtc    *time.Time `json:"dt_updated_utc,omitempty"`
 	Rating          *float32   `json:"rating,omitempty"`
+	Dates           *[]Date    `json:"dates,omitempty"`
 }
 
 type SessionPropertiesWithVenue struct {
