@@ -8,7 +8,7 @@
 		visibleLayer,
 		infoVisible
 	} from '../stores';
-	import { getSessions } from '../api';
+	import { getSessions, type SessionOptions } from '../api';
 	import { MapLayer, type SessionFeatureCollection, Genre, Backline } from '../types';
 	import SettingsIcon from '../lib/icons/SettingsIcon.svelte';
 	import InfoIcon from '../lib/icons/InfoIcon.svelte';
@@ -27,11 +27,17 @@
 		$loading = true;
 		window.sessionStorage.setItem('selectedDateStr', selectedDateStr);
 		try {
-			$selectedSessions = await getSessions({
+			let params: SessionOptions = {
 				date: new Date(selectedDateStr),
 				backline: window.sessionStorage.getItem('selectedBackline')?.split(',') as Backline[],
 				genre: window.sessionStorage.getItem('selectedGenre') as Genre
-			});
+			}
+			if (window.sessionStorage.getItem('selectedTimeRange') && window.sessionStorage.getItem('selectedTimeRange') !== '0') {
+				let endDate = new Date(selectedDateStr);
+				endDate!.setDate(endDate!.getDate() + parseInt(window.sessionStorage.getItem('selectedTimeRange')!))
+				params["endDate"] = endDate
+			}
+			$selectedSessions = await getSessions(params);
 		} catch (e) {
 			alert('An error occured when waiting for data from the server: ' + (e as Error).message);
 			throw e;

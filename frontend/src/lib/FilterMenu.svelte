@@ -2,7 +2,7 @@
 	import { loading, filterMenuVisible, selectedSessions, visibleLayer } from '../stores';
 	import Modal from './Modal.svelte';
 	import { Backline, Genre, type SessionFeatureCollection, MapLayer } from '../types';
-	import { getSessions } from '../api';
+	import { getSessions, type SessionOptions } from '../api';
 	import MultiSelect from './MultiSelect.svelte';
 	import MicrophoneIcon from './icons/MicrophoneIcon.svelte';
 	import FileTrayIcon from './icons/FileTrayIcon.svelte';
@@ -10,7 +10,7 @@
 
 	let selectedGenre: string;
 	let selectedBackline: string[] = [];
-	let selectedTimeRange: number;
+	let selectedTimeRange: number = 0;
 
 	let onChangeBackline = () => {
 		selectedBackline = Array.from(document.querySelectorAll('#backline-select > option:checked'))
@@ -23,11 +23,17 @@
 		$filterMenuVisible = false;
 		$loading = true;
 		try {
-			$selectedSessions = await getSessions({
+			let params: SessionOptions = {
 				date: new Date(window.sessionStorage.getItem('selectedDateStr')!),
 				backline: window.sessionStorage.getItem('selectedBackline')?.split(',') as Backline[],
 				genre: window.sessionStorage.getItem('selectedGenre') as Genre
-			});
+			}
+			if (window.sessionStorage.getItem('selectedTimeRange') !== '0') {
+				let endDate = params.date
+				endDate!.setDate(endDate!.getDate() + parseInt(window.sessionStorage.getItem('selectedTimeRange')!))
+				params["endDate"] = endDate
+			}
+			$selectedSessions = await getSessions(params);
 		} catch (e) {
 			alert('An error occured when waiting for data from the server: ' + (e as Error).message);
 			throw e;
@@ -41,6 +47,7 @@
 		selectedBackline = [];
 		window.sessionStorage.setItem('selectedBackline', '');
 		window.sessionStorage.setItem('selectedGenre', Genre.ANY);
+		window.sessionStorage.setItem('selectedTimeRange', "0");
 	};
 </script>
 

@@ -21,8 +21,9 @@ export const getVenues = async (): Promise<VenuesFeatureCollection> => {
     }
 }
 
-interface SessionOptions {
+export interface SessionOptions {
     date?: Date
+    endDate?: Date
     genre?: Genre
     backline?: Backline[]
 }
@@ -30,8 +31,12 @@ interface SessionOptions {
 export const getSessions = async (opts: SessionOptions = {}): Promise<SessionWithVenueFeatureCollection> => {
     // parse opts and build URL
     let queryParams: string[] = []
-    if (opts.date) {
+    if (opts.date && !opts.endDate) {
         queryParams.push("date=" + opts.date.toISOString().slice(0, 10))
+    }
+    if (opts.date && opts.endDate) {
+        console.log("endDate", opts.endDate)
+        queryParams.push("date=" + opts.date.toISOString().slice(0, 10) + "%2F" + opts.endDate.toISOString().slice(0, 10))
     }
     if (opts.genre && opts.genre != Genre.ANY) {
         queryParams.push("genre=" + opts.genre)
