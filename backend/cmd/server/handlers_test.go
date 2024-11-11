@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,6 +9,10 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -76,7 +81,7 @@ func TestHandlers(t *testing.T) {
 	}
 
 	// add test data - session (tests use ephemeral databases so no need for cleanup after tests)
-	_, err = queries.InsertJamSession(ctx, dbutils.InsertJamSessionParams{
+	testSession1Id, err := queries.InsertJamSession(ctx, dbutils.InsertJamSessionParams{
 		SessionName:     "test_session1",
 		StartTimeUtc:    pgtype.Timestamptz{Time: time.Date(2024, 1, 1, 19, 30, 0, 0, time.UTC), Valid: true},
 		Interval:        "Weekly",
@@ -88,7 +93,7 @@ func TestHandlers(t *testing.T) {
 		t.Errorf("the following error occured when trying to insert test session 1: %v", err)
 	}
 
-	_, err = queries.InsertJamSession(ctx, dbutils.InsertJamSessionParams{
+	testSession2Id, err := queries.InsertJamSession(ctx, dbutils.InsertJamSessionParams{
 		SessionName:     "test_session2",
 		StartTimeUtc:    pgtype.Timestamptz{Time: time.Date(2024, 1, 2, 19, 30, 0, 0, time.UTC), Valid: true},
 		Interval:        "Weekly",
@@ -101,72 +106,72 @@ func TestHandlers(t *testing.T) {
 	}
 
 	t.Run("GetAllVenues", func(t *testing.T) {
-	 	handler := fuego.HTTPHandler(s, GetVenues)
-	 	req := httptest.NewRequest(http.MethodGet, "/venues", nil)
-	 	w := httptest.NewRecorder()
-	 	handler(w, req)
-	 	res := w.Result()
-	 	defer res.Body.Close()
-	 	data, err := io.ReadAll(res.Body)
-	 	if err != nil {
-	 		t.Errorf("expected error to be nil got %v", err)
-	 	}
-	 	var body types.VenueFeatureCollection
-	 	err = json.Unmarshal(data, &body)
-	 	if err != nil {
-	 		t.Errorf("expected error to be nil got %v", err)
-	 	}
-	 	if len(body.Features) == 0 {
-	 		t.Errorf("expected at least 1 feature in the venue feature collection")
-	 	}
+		handler := fuego.HTTPHandler(s, GetVenues)
+		req := httptest.NewRequest(http.MethodGet, "/venues", nil)
+		w := httptest.NewRecorder()
+		handler(w, req)
+		res := w.Result()
+		defer res.Body.Close()
+		data, err := io.ReadAll(res.Body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+		var body types.VenueFeatureCollection
+		err = json.Unmarshal(data, &body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+		if len(body.Features) == 0 {
+			t.Errorf("expected at least 1 feature in the venue feature collection")
+		}
 	})
 
-	// t.Run("GetAllSessions", func(t *testing.T) {
-	// 	handler := fuego.HTTPHandler(s, GetSessions)
-	// 	req := httptest.NewRequest(http.MethodGet, "/sessions", nil)
-	// 	w := httptest.NewRecorder()
-	// 	handler(w, req)
-	// 	res := w.Result()
-	// 	defer res.Body.Close()
-	// 	data, err := io.ReadAll(res.Body)
-	// 	if err != nil {
-	// 		t.Errorf("expected error to be nil got %v", err)
-	// 	}
-	// 	var body types.SessionFeatureCollection
-	// 	err = json.Unmarshal(data, &body)
-	// 	if err != nil {
-	// 		t.Errorf("expected error to be nil got %v", err)
-	// 	}
-	// 	if len(body.Features) < 2 {
-	// 		t.Errorf("expected at least 2 feature in the session feature collection, got %v", len(body.Features))
-	// 		t.FailNow()
-	// 	}
+	t.Run("GetAllSessions", func(t *testing.T) {
+		handler := fuego.HTTPHandler(s, GetSessions)
+		req := httptest.NewRequest(http.MethodGet, "/sessions", nil)
+		w := httptest.NewRecorder()
+		handler(w, req)
+		res := w.Result()
+		defer res.Body.Close()
+		data, err := io.ReadAll(res.Body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+		var body types.SessionFeatureCollection
+		err = json.Unmarshal(data, &body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+		if len(body.Features) < 2 {
+			t.Errorf("expected at least 2 feature in the session feature collection, got %v", len(body.Features))
+			t.FailNow()
+		}
 
-	// 	checkResultSetForSessionIds(t, []int32{testSession1Id, testSession2Id}, body)
-	// })
+		checkResultSetForSessionIds(t, []int32{testSession1Id, testSession2Id}, body)
+	})
 
-	// t.Run("GetSessionsByInferredDate", func(t *testing.T) {
-	// 	handler := fuego.HTTPHandler(s, GetSessions)
-	// 	req := httptest.NewRequest(http.MethodGet, "/jamsessions?date=2024-01-09", nil) // start date of session 2 plus 1 week (to match interval)
-	// 	w := httptest.NewRecorder()
-	// 	handler(w, req)
-	// 	res := w.Result()
-	// 	defer res.Body.Close()
-	// 	data, err := io.ReadAll(res.Body)
-	// 	if err != nil {
-	// 		t.Errorf("expected error to be nil got %v", err)
-	// 	}
-	// 	var body types.SessionFeatureCollection
-	// 	err = json.Unmarshal(data, &body)
-	// 	if err != nil {
-	// 		t.Errorf("expected error to be nil got %v", err)
-	// 	}
-	// 	if len(body.Features) == 0 {
-	// 		t.Errorf("expected at least 1 feature in the session feature collection")
-	// 	}
+	t.Run("GetSessionsByInferredDate", func(t *testing.T) {
+		handler := fuego.HTTPHandler(s, GetSessions)
+		req := httptest.NewRequest(http.MethodGet, "/jamsessions?date=2024-01-09", nil) // start date of session 2 plus 1 week (to match interval)
+		w := httptest.NewRecorder()
+		handler(w, req)
+		res := w.Result()
+		defer res.Body.Close()
+		data, err := io.ReadAll(res.Body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+		var body types.SessionFeatureCollection
+		err = json.Unmarshal(data, &body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+		if len(body.Features) == 0 {
+			t.Errorf("expected at least 1 feature in the session feature collection")
+		}
 
-	// 	checkResultSetForSessionIds(t, []int32{testSession2Id}, body)
-	// })
+		checkResultSetForSessionIds(t, []int32{testSession2Id}, body)
+	})
 
 	t.Run("GetSessionsNoDateMatch", func(t *testing.T) {
 		handler := fuego.HTTPHandler(s, GetSessions)
@@ -202,49 +207,49 @@ func TestHandlers(t *testing.T) {
 		}
 	})
 
-	// t.Run("GetSessionsByDateAndGenre", func(t *testing.T) {
-	// 	handler := fuego.HTTPHandler(s, GetSessions)
-	// 	req := httptest.NewRequest(http.MethodGet, "/jamsessions?date=2024-01-01&genre=Blues", nil)
-	// 	w := httptest.NewRecorder()
-	// 	handler(w, req)
-	// 	res := w.Result()
-	// 	defer res.Body.Close()
-	// 	data, err := io.ReadAll(res.Body)
-	// 	if err != nil {
-	// 		t.Errorf("expected error to be nil got %v", err)
-	// 	}
-	// 	var body types.SessionFeatureCollection
-	// 	err = json.Unmarshal(data, &body)
-	// 	if err != nil {
-	// 		t.Errorf("expected error to be nil got %v", err)
-	// 	}
-	// 	if len(body.Features) == 0 {
-	// 		t.Errorf("expected at least 1 feature in the session feature collection")
-	// 	}
-	// 	checkResultSetForSessionIds(t, []int32{testSession1Id}, body)
-	// })
+	t.Run("GetSessionsByDateAndGenre", func(t *testing.T) {
+		handler := fuego.HTTPHandler(s, GetSessions)
+		req := httptest.NewRequest(http.MethodGet, "/jamsessions?date=2024-01-01&genre=Blues", nil)
+		w := httptest.NewRecorder()
+		handler(w, req)
+		res := w.Result()
+		defer res.Body.Close()
+		data, err := io.ReadAll(res.Body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+		var body types.SessionFeatureCollection
+		err = json.Unmarshal(data, &body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+		if len(body.Features) == 0 {
+			t.Errorf("expected at least 1 feature in the session feature collection")
+		}
+		checkResultSetForSessionIds(t, []int32{testSession1Id}, body)
+	})
 
-	// t.Run("GetSessionsByDateRangeAndGenre", func(t *testing.T) {
-	// 	handler := fuego.HTTPHandler(s, GetSessions)
-	// 	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/jamsessions?date=%v&genre=Blues", url.QueryEscape("2024-01-01/2024-03-01")), nil)
-	// 	w := httptest.NewRecorder()
-	// 	handler(w, req)
-	// 	res := w.Result()
-	// 	defer res.Body.Close()
-	// 	data, err := io.ReadAll(res.Body)
-	// 	if err != nil {
-	// 		t.Errorf("expected error to be nil got %v", err)
-	// 	}
-	// 	var body types.SessionFeatureCollection
-	// 	err = json.Unmarshal(data, &body)
-	// 	if err != nil {
-	// 		t.Errorf("expected error to be nil got %v", err)
-	// 	}
-	// 	if len(body.Features) == 0 {
-	// 		t.Errorf("expected at least 1 feature in the session feature collection")
-	// 	}
-	// 	checkResultSetForSessionIds(t, []int32{testSession1Id}, body)
-	// })
+	t.Run("GetSessionsByDateRangeAndGenre", func(t *testing.T) {
+		handler := fuego.HTTPHandler(s, GetSessions)
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/jamsessions?date=%v&genre=Blues", url.QueryEscape("2024-01-01/2024-03-01")), nil)
+		w := httptest.NewRecorder()
+		handler(w, req)
+		res := w.Result()
+		defer res.Body.Close()
+		data, err := io.ReadAll(res.Body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+		var body types.SessionFeatureCollection
+		err = json.Unmarshal(data, &body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+		if len(body.Features) == 0 {
+			t.Errorf("expected at least 1 feature in the session feature collection")
+		}
+		checkResultSetForSessionIds(t, []int32{testSession1Id}, body)
+	})
 
 	t.Run("GetSessionsByDateRangeAndGenre2", func(t *testing.T) {
 		handler := fuego.HTTPHandler(s, GetSessions)
@@ -352,198 +357,193 @@ func TestHandlers(t *testing.T) {
 		// temp directory for migrations
 		migrationsDirectory = t.TempDir()
 
-	t.Run("PostCommentForSessionById", func(t *testing.T) {
+		testComment := "Test comment number 123!"
 
-	// 		// temp directory for migrations
-	// 		migrationsDirectory = t.TempDir()
+		handler := fuego.HTTPHandler(s, PostCommentForSessionById)
+		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/jamsessions/%v/comments", testSession1Id), strings.NewReader(fmt.Sprintf(`{"content": "%v"}`, testComment)))
+		req.SetPathValue("id", fmt.Sprint(testSession1Id))
+		w := httptest.NewRecorder()
+		handler(w, req)
+		res := w.Result()
+		if res.StatusCode != 201 {
+			t.Errorf("expected status code 201, got %v", res.StatusCode)
+		}
 
-	// 		testComment := "Test comment number 123!"
+		dir, err := os.ReadDir(migrationsDirectory)
+		if err != nil {
+			t.Errorf("couldn't read directory contents: %v", err)
+			t.FailNow()
+		}
+		if len(dir) != 1 {
+			t.Errorf("expected exactly 1 file in the directory, got %v", len(dir))
+			t.FailNow()
+		}
 
-	// 		handler := fuego.HTTPHandler(s, PostCommentForSessionById)
-	// 		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/jamsessions/%v/comments", testSession1Id), strings.NewReader(fmt.Sprintf(`{"content": "%v"}`, testComment)))
-	// 		req.SetPathValue("id", fmt.Sprint(testSession1Id))
-	// 		w := httptest.NewRecorder()
-	// 		handler(w, req)
-	// 		res := w.Result()
-	// 		if res.StatusCode != 201 {
-	// 			t.Errorf("expected status code 201, got %v", res.StatusCode)
-	// 		}
+		f, err := os.ReadFile(filepath.Join(migrationsDirectory, dir[0].Name()))
+		if err != nil {
+			t.Errorf("error reading file: %v", err)
+		}
 
-	// 		dir, err := os.ReadDir(migrationsDirectory)
-	// 		if err != nil {
-	// 			t.Errorf("couldn't read directory contents: %v", err)
-	// 			t.FailNow()
-	// 		}
-	// 		if len(dir) != 1 {
-	// 			t.Errorf("expected exactly 1 file in the directory, got %v", len(dir))
-	// 			t.FailNow()
-	// 		}
+		matched, err := regexp.Match(fmt.Sprintf(`.*.*dbcli insert comment "{\\"session\\":%v,\\"author\\":\\"\\",\\"content\\":\\"%v\\"}"`, testSession1Id, testComment), f)
+		if err != nil {
+			t.Errorf("error when trying match with regex: %v", err)
+		}
 
-	// 		f, err := os.ReadFile(filepath.Join(migrationsDirectory, dir[0].Name()))
-	// 		if err != nil {
-	// 			t.Errorf("error reading file: %v", err)
-	// 		}
+		if !matched {
+			t.Errorf("expected the regex to match. instead got file contents: %s", f)
+		}
+		// see internal/db/cli for cli tests
+	})
 
-	// 		matched, err := regexp.Match(fmt.Sprintf(`.*.*dbcli insert comment "{\\"session\\":%v,\\"author\\":\\"\\",\\"content\\":\\"%v\\"}"`, testSession1Id, testComment), f)
-	// 		if err != nil {
-	// 			t.Errorf("error when trying match with regex: %v", err)
-	// 		}
+	t.Run("PostSession", func(t *testing.T) {
+		// temp directory for migrations
+		migrationsDirectory = t.TempDir()
 
-	// 		if !matched {
-	// 			t.Errorf("expected the regex to match. instead got file contents: %s", f)
-	// 		}
-	// 		// see internal/db/cli for cli tests
-	// 	})
+		testBody, err := json.Marshal(types.SessionProperties{
+			SessionName:     ptr("TestInsert"),
+			Venue:           &testVenueId,
+			Description:     ptr("Description."),
+			StartTimeUtc:    ptr(time.Date(2024, 3, 4, 5, 5, 3, 5, time.UTC)),
+			DurationMinutes: ptr(int16(90)),
+			Interval:        ptr("FirstOfMonth"),
+			SessionWebsite:  ptr("https://example.org"),
+		})
+		if err != nil {
+			t.Error("could not marshal json:", err)
+			t.FailNow()
+		}
 
-	// 	t.Run("PostSession", func(t *testing.T) {
-	// 		// temp directory for migrations
-	// 		migrationsDirectory = t.TempDir()
+		handler := fuego.HTTPHandler(s, PostSession)
+		req := httptest.NewRequest(http.MethodPost, "/jamsessions", bytes.NewReader(testBody))
+		w := httptest.NewRecorder()
+		handler(w, req)
+		res := w.Result()
+		if res.StatusCode != 201 {
+			t.Errorf("expected status code 201, got %v", res.StatusCode)
+		}
 
-	// 		testBody, err := json.Marshal(types.SessionProperties{
-	// 			SessionName:     ptr("TestInsert"),
-	// 			Venue:           &testVenueId,
-	// 			Description:     ptr("Description."),
-	// 			StartTimeUtc:    ptr(time.Date(2024, 3, 4, 5, 5, 3, 5, time.UTC)),
-	// 			DurationMinutes: ptr(int16(90)),
-	// 			Interval:        ptr("FirstOfMonth"),
-	// 			SessionWebsite:  ptr("https://example.org"),
-	// 		})
-	// 		if err != nil {
-	// 			t.Error("could not marshal json:", err)
-	// 			t.FailNow()
-	// 		}
+		dir, err := os.ReadDir(migrationsDirectory)
+		if err != nil {
+			t.Errorf("couldn't read directory contents: %v", err)
+			t.FailNow()
+		}
+		if len(dir) != 1 {
+			t.Errorf("expected exactly 1 file in the directory, got %v", len(dir))
+			t.FailNow()
+		}
 
-	// 		handler := fuego.HTTPHandler(s, PostSession)
-	// 		req := httptest.NewRequest(http.MethodPost, "/jamsessions", bytes.NewReader(testBody))
-	// 		w := httptest.NewRecorder()
-	// 		handler(w, req)
-	// 		res := w.Result()
-	// 		if res.StatusCode != 201 {
-	// 			t.Errorf("expected status code 201, got %v", res.StatusCode)
-	// 		}
+		f, err := os.ReadFile(filepath.Join(migrationsDirectory, dir[0].Name()))
+		if err != nil {
+			t.Errorf("error reading file: %v", err)
+		}
 
-	// 		dir, err := os.ReadDir(migrationsDirectory)
-	// 		if err != nil {
-	// 			t.Errorf("couldn't read directory contents: %v", err)
-	// 			t.FailNow()
-	// 		}
-	// 		if len(dir) != 1 {
-	// 			t.Errorf("expected exactly 1 file in the directory, got %v", len(dir))
-	// 			t.FailNow()
-	// 		}
+		matched, err := regexp.Match(fmt.Sprintf(`insert session "{\\"session_name\\":\\"%v\\",.*`, "TestInsert"), f)
+		if err != nil {
+			t.Errorf("error when trying match with regex: %v", err)
+		}
 
-	// 		f, err := os.ReadFile(filepath.Join(migrationsDirectory, dir[0].Name()))
-	// 		if err != nil {
-	// 			t.Errorf("error reading file: %v", err)
-	// 		}
+		if !matched {
+			t.Errorf("expected the regex to match. instead got file contents: %s", f)
+		}
+	})
 
-	// 		matched, err := regexp.Match(fmt.Sprintf(`insert session "{\\"session_name\\":\\"%v\\",.*`, "TestInsert"), f)
-	// 		if err != nil {
-	// 			t.Errorf("error when trying match with regex: %v", err)
-	// 		}
+	t.Run("PostSessionAndVenue", func(t *testing.T) {
+		// temp directory for migrations
+		migrationsDirectory = t.TempDir()
 
-	// 		if !matched {
-	// 			t.Errorf("expected the regex to match. instead got file contents: %s", f)
-	// 		}
-	// 	})
+		testBody, err := json.Marshal(types.SessionPropertiesWithVenue{SessionProperties: types.SessionProperties{
+			SessionName:     ptr("TestInsert2"),
+			Description:     ptr("Description."),
+			StartTimeUtc:    ptr(time.Date(2024, 3, 4, 5, 5, 3, 5, time.UTC)),
+			DurationMinutes: ptr(int16(90)),
+			Interval:        ptr("FirstOfMonth"),
+			SessionWebsite:  ptr("https://example.org"),
+		},
+			VenueProperties: types.VenueProperties{
+				VenueName:        ptr("VenueInsert"),
+				AddressFirstLine: ptr("1 Random St"),
+				City:             ptr("Randomtown"),
+				Postcode:         ptr("ABC 123"),
+				VenueWebsite:     ptr("https://example.org"),
+				Backline:         &[]string{"PA", "Drums"},
+			},
+		})
+		if err != nil {
+			t.Error("could not marshal json:", err)
+			t.FailNow()
+		}
 
-	// 	t.Run("PostSessionAndVenue", func(t *testing.T) {
-	// 		// temp directory for migrations
-	// 		migrationsDirectory = t.TempDir()
+		handler := fuego.HTTPHandler(s, PostSession)
+		req := httptest.NewRequest(http.MethodPost, "/jamsessions", bytes.NewReader(testBody))
+		w := httptest.NewRecorder()
+		handler(w, req)
+		res := w.Result()
+		if res.StatusCode != 201 {
+			t.Errorf("expected status code 201, got %v", res.StatusCode)
+		}
 
-	// 		testBody, err := json.Marshal(types.SessionPropertiesWithVenue{SessionProperties: types.SessionProperties{
-	// 			SessionName:     ptr("TestInsert2"),
-	// 			Description:     ptr("Description."),
-	// 			StartTimeUtc:    ptr(time.Date(2024, 3, 4, 5, 5, 3, 5, time.UTC)),
-	// 			DurationMinutes: ptr(int16(90)),
-	// 			Interval:        ptr("FirstOfMonth"),
-	// 			SessionWebsite:  ptr("https://example.org"),
-	// 		},
-	// 			VenueProperties: types.VenueProperties{
-	// 				VenueName:        ptr("VenueInsert"),
-	// 				AddressFirstLine: ptr("1 Random St"),
-	// 				City:             ptr("Randomtown"),
-	// 				Postcode:         ptr("ABC 123"),
-	// 				VenueWebsite:     ptr("https://example.org"),
-	// 				Backline:         &[]string{"PA", "Drums"},
-	// 			},
-	// 		})
-	// 		if err != nil {
-	// 			t.Error("could not marshal json:", err)
-	// 			t.FailNow()
-	// 		}
+		dir, err := os.ReadDir(migrationsDirectory)
+		if err != nil {
+			t.Errorf("couldn't read directory contents: %v", err)
+			t.FailNow()
+		}
+		if len(dir) != 1 {
+			t.Errorf("expected exactly 1 file in the directory, got %v", len(dir))
+			t.FailNow()
+		}
 
-	// 		handler := fuego.HTTPHandler(s, PostSession)
-	// 		req := httptest.NewRequest(http.MethodPost, "/jamsessions", bytes.NewReader(testBody))
-	// 		w := httptest.NewRecorder()
-	// 		handler(w, req)
-	// 		res := w.Result()
-	// 		if res.StatusCode != 201 {
-	// 			t.Errorf("expected status code 201, got %v", res.StatusCode)
-	// 		}
+		f, err := os.ReadFile(filepath.Join(migrationsDirectory, dir[0].Name()))
+		if err != nil {
+			t.Errorf("error reading file: %v", err)
+		}
 
-	// 		dir, err := os.ReadDir(migrationsDirectory)
-	// 		if err != nil {
-	// 			t.Errorf("couldn't read directory contents: %v", err)
-	// 			t.FailNow()
-	// 		}
-	// 		if len(dir) != 1 {
-	// 			t.Errorf("expected exactly 1 file in the directory, got %v", len(dir))
-	// 			t.FailNow()
-	// 		}
+		matched, err := regexp.Match(fmt.Sprintf(`new_id=\$\(dbcli insert venue "{\\"venue_name\\":\\"%v\\",.*\n.*\\"session_name\\":\\"%v\\",.*`, "VenueInsert", "TestInsert2"), f)
+		if err != nil {
+			t.Errorf("error when trying match with regex: %v", err)
+		}
 
-	// 		f, err := os.ReadFile(filepath.Join(migrationsDirectory, dir[0].Name()))
-	// 		if err != nil {
-	// 			t.Errorf("error reading file: %v", err)
-	// 		}
+		if !matched {
+			t.Errorf("expected the regex to match. instead got file contents: %s", f)
+		}
+	})
 
-	// 		matched, err := regexp.Match(fmt.Sprintf(`new_id=\$\(dbcli insert venue "{\\"venue_name\\":\\"%v\\",.*\n.*\\"session_name\\":\\"%v\\",.*`, "VenueInsert", "TestInsert2"), f)
-	// 		if err != nil {
-	// 			t.Errorf("error when trying match with regex: %v", err)
-	// 		}
+	t.Run("PostSessionAltPayload", func(t *testing.T) {
+		// temp directory for migrations
+		migrationsDirectory = t.TempDir()
 
-	// 		if !matched {
-	// 			t.Errorf("expected the regex to match. instead got file contents: %s", f)
-	// 		}
-	// 	})
+		testBody := `{"session_name":"TEST session 123","description":"dafdsc dsd.","interval":"Weekly","start_time_utc":"2024-10-16T00:00:00.000Z","duration_minutes":60,"genres":[],"session_website":"https://example.org/"}`
 
-	// 	t.Run("PostSessionAltPayload", func(t *testing.T) {
-	// 		// temp directory for migrations
-	// 		migrationsDirectory = t.TempDir()
+		handler := fuego.HTTPHandler(s, PostSession)
+		req := httptest.NewRequest(http.MethodPost, "/jamsessions", strings.NewReader(testBody))
+		w := httptest.NewRecorder()
+		handler(w, req)
+		res := w.Result()
+		if res.StatusCode != 201 {
+			t.Errorf("expected status code 201, got %v", res.StatusCode)
+		}
 
-	// 		testBody := `{"session_name":"TEST session 123","description":"dafdsc dsd.","interval":"Weekly","start_time_utc":"2024-10-16T00:00:00.000Z","duration_minutes":60,"genres":[],"session_website":"https://example.org/"}`
+		dir, err := os.ReadDir(migrationsDirectory)
+		if err != nil {
+			t.Errorf("couldn't read directory contents: %v", err)
+			t.FailNow()
+		}
+		if len(dir) != 1 {
+			t.Errorf("expected exactly 1 file in the directory, got %v", len(dir))
+			t.FailNow()
+		}
 
-	// 		handler := fuego.HTTPHandler(s, PostSession)
-	// 		req := httptest.NewRequest(http.MethodPost, "/jamsessions", strings.NewReader(testBody))
-	// 		w := httptest.NewRecorder()
-	// 		handler(w, req)
-	// 		res := w.Result()
-	// 		if res.StatusCode != 201 {
-	// 			t.Errorf("expected status code 201, got %v", res.StatusCode)
-	// 		}
+		f, err := os.ReadFile(filepath.Join(migrationsDirectory, dir[0].Name()))
+		if err != nil {
+			t.Errorf("error reading file: %v", err)
+		}
 
-	// 		dir, err := os.ReadDir(migrationsDirectory)
-	// 		if err != nil {
-	// 			t.Errorf("couldn't read directory contents: %v", err)
-	// 			t.FailNow()
-	// 		}
-	// 		if len(dir) != 1 {
-	// 			t.Errorf("expected exactly 1 file in the directory, got %v", len(dir))
-	// 			t.FailNow()
-	// 		}
+		matched, err := regexp.Match(fmt.Sprintf(`insert session "{\\"session_name\\":\\"%v\\",.*`, "TEST session 123"), f)
+		if err != nil {
+			t.Errorf("error when trying match with regex: %v", err)
+		}
 
-	// 		f, err := os.ReadFile(filepath.Join(migrationsDirectory, dir[0].Name()))
-	// 		if err != nil {
-	// 			t.Errorf("error reading file: %v", err)
-	// 		}
-
-	// 		matched, err := regexp.Match(fmt.Sprintf(`insert session "{\\"session_name\\":\\"%v\\",.*`, "TEST session 123"), f)
-	// 		if err != nil {
-	// 			t.Errorf("error when trying match with regex: %v", err)
-	// 		}
-
-	//		if !matched {
-	//			t.Errorf("expected the regex to match. instead got file contents: %s", f)
-	//		}
-	//	})
+		if !matched {
+			t.Errorf("expected the regex to match. instead got file contents: %s", f)
+		}
+	})
 }
