@@ -122,7 +122,7 @@ func TestCli(t *testing.T) {
 			SessionName:     ptr("Foo's Session"),
 			Venue:           ptr(int32(999999)), // replace this after serialisation
 			Description:     ptr("Bla bla"),
-			StartTimeUtc:    ptr(time.Date(2024, 1, 1, 1, 1, 1, 1, time.UTC)),
+			StartTimeUtc:    ptr(time.Date(2024, 5, 7, 1, 1, 1, 1, time.UTC)),
 			DurationMinutes: ptr(int16(30)),
 			Interval:        ptr("Weekly"),
 		}

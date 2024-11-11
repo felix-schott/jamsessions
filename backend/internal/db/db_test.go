@@ -18,6 +18,7 @@ import (
 var queries *Queries
 var ctx = context.Background()
 var fixtureSessionId int32
+var fixtureSessionId2 int32
 
 func TestMain(m *testing.M) {
 	setup()
@@ -42,7 +43,7 @@ func setup() {
 	}
 	row.Scan(&numTables)
 	if numTables != 2 {
-		log.Fatalf("test expects a pre-populated DB. Tables 'jamsessions' and 'venues' found missing. Number of table: %v", numTables)
+		log.Fatalf("test expects a pre-populated DB. Tables 'jamsessions' and 'venues' found missing. Number of tables: %v", numTables)
 	}
 
 	var numRowsPostgisFunc int
@@ -57,25 +58,31 @@ func setup() {
 
 	queries = New(pool)
 
-	// add one dummy record to both Location and JamSession table
-	fixtureSessionId, err = insertSession("Ronnie Scott's Jazz Club", 12, 15)
+	// add dummy records to both Venue and JamSession table
+	fixtureSessionId, err = insertSession("Ronnie Scott's Jazz Club", 12, 18, 15, "Weekly")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fixtureSessionId2, err = insertSession("Ronnie Scott's Jazz Cafe", 13, 19, 15, "Daily")
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func teardown() {
-	if fixtureSessionId != 0 {
-		err := queries.DeleteVenueByJamSessionId(ctx, fixtureSessionId)
-		if err != nil {
-			log.Fatalf("could not delete venue previously inserted for session id %v: %v", fixtureSessionId, err)
-		}
-		err = queries.DeleteJamSessionById(ctx, fixtureSessionId)
-		if err != nil {
-			log.Fatalf("could not delete session with id %v", fixtureSessionId)
-		}
-	}
-}
+// don't really need this as we're using an ephemeral testing database
+// func teardown() {
+// 	if fixtureSessionId != 0 {
+// 		err := queries.DeleteVenueByJamSessionId(ctx, fixtureSessionId)
+// 		if err != nil {
+// 			log.Fatalf("could not delete venue previously inserted for session id %v: %v", fixtureSessionId, err)
+// 		}
+// 		err = queries.DeleteJamSessionById(ctx, fixtureSessionId)
+// 		if err != nil {
+// 			log.Fatalf("could not delete session with id %v", fixtureSessionId)
+// 		}
+// 	}
+// }
 
 // https://github.com/golang/go/issues/63309
 func ptr[T any](t T) *T { return &t }
@@ -83,7 +90,7 @@ func ptr[T any](t T) *T { return &t }
 // Helper function that inserts a JamSession and corresponding Location record.
 // The two params houseNumber and startMinute can be used to control uniqueness within the
 // Location and JamSession table, respectively.
-func insertSession(locationName string, houseNumber uint8, startMinute int) (int32, error) {
+func insertSession(locationName string, houseNumber uint8, day int, startMinute int, interval string) (int32, error) {
 	venue, err := queries.InsertVenue(ctx, InsertVenueParams{
 		VenueName:        locationName,
 		AddressFirstLine: string(houseNumber) + " Frith Street",
@@ -100,8 +107,8 @@ func insertSession(locationName string, houseNumber uint8, startMinute int) (int
 
 	sessionId, err := queries.InsertJamSession(ctx, InsertJamSessionParams{
 		SessionName:     "test_session",
-		StartTimeUtc:    pgtype.Timestamptz{Time: time.Date(2024, 1, 1, 19, startMinute, 0, 0, time.UTC), Valid: true},
-		Interval:        "Weekly",
+		StartTimeUtc:    pgtype.Timestamptz{Time: time.Date(2024, 8, day, 19, startMinute, 0, 0, time.UTC), Valid: true},
+		Interval:        interval,
 		DurationMinutes: 120,
 		Venue:           venue,
 	})
@@ -132,7 +139,7 @@ func insertSession(locationName string, houseNumber uint8, startMinute int) (int
 func TestInsertJamsession(t *testing.T) {
 	var houseNumber uint8 = 50
 	var startMinute int = 30
-	newSessionId, err := insertSession("Ronnie Scott's Blues Club", houseNumber, startMinute) // both params differ from the fixture inserted during setup
+	newSessionId, err := insertSession("Ronnie Scott's Blues Club", houseNumber, 1, startMinute, "Once") // both params differ from the fixture inserted during setup
 	if err != nil {
 		t.Fatalf("encountered an error when inserting a new session: %v", err)
 	}
@@ -212,6 +219,74 @@ func TestInsertAndRetrieveComment(t *testing.T) {
 	}
 }
 
+func TestGetSessionIdsByDate(t *testing.T) {
+	result, err := queries.GetSessionIdsByDate(ctx, pgtype.Date{Time: time.Date(2024, 11, 19, 0, 0, 0, 0, time.UTC), Valid: true})
+	if err != nil {
+		t.Errorf("could not retrieve session ids by date: %v", err)
+		t.FailNow()
+	}
+	if len(result) != 1 {
+		t.Errorf("expected exactly 1 item in the result set")
+		t.FailNow()
+	}
+	s := result[0].([]any)
+	id := s[0].(int32)
+	dates := s[1].([]any)
+	if len(dates) != 1 {
+		t.Errorf("expected the dates array to be of size 1")
+	}
+	date := types.Date(dates[0].(time.Time))
+	if id != fixtureSessionId2 { // type cast
+		t.Errorf("expected fixture 2 (%v), got %v", fixtureSessionId2, s[0])
+	}
+	if date.String() != "2024-11-19" {
+		t.Errorf("expected the dates attribute to be 2024-11-19, got %v", date.String())
+	}
+}
+
+func TestGetSessionsByDate(t *testing.T) {
+	result, err := queries.GetSessionsByDateAsGeoJSON(ctx, pgtype.Date{Time: time.Date(2024, 8, 19, 0, 0, 0, 0, time.UTC), Valid: true})
+	if err != nil {
+		t.Errorf("could not retrieve session ids by date: %v", err)
+		t.FailNow()
+	}
+	var j types.SessionFeatureCollection
+	if err := json.Unmarshal(result, &j); err != nil {
+		t.Error("could not unmarshal:", err)
+	}
+	if len(j.Features) != 1 {
+		t.Errorf("expected exactly 1 item in the result set, got %v", len(j.Features))
+		t.FailNow()
+	}
+	if *j.Features[0].Properties.SessionID != fixtureSessionId2 {
+		t.Errorf("expected fixture 2 (%v), got %v", fixtureSessionId2, *j.Features[0].Properties.SessionID)
+	}
+}
+
+func TestGetSessionIdsByDateRange(t *testing.T) {
+	result, err := queries.GetSessionIdsByDateRange(ctx, GetSessionIdsByDateRangeParams{
+		StartDate: pgtype.Date{Time: time.Date(2024, 8, 15, 0, 0, 0, 0, time.UTC), Valid: true},
+		EndDate:   pgtype.Date{Time: time.Date(2024, 8, 22, 0, 0, 0, 0, time.UTC), Valid: true},
+	})
+	if err != nil {
+		t.Errorf("could not retrieve session ids by date range: %v", err)
+		t.FailNow()
+	}
+	if len(result) != 2 {
+		t.Error("expected exactly 2 items in the result set, instead got", result)
+		t.FailNow()
+	}
+	for _, i := range result {
+		s := i.([]any)
+		sessionId := s[0].(int32)
+		if sessionId == fixtureSessionId2 && len(s[1].([]any)) != 8 { // daily, so must be the number of days between start and end
+			t.Error("expected exactly 8 items in the date array, instead got", s[1])
+		} else if sessionId == fixtureSessionId && len(s[1].([]any)) != 1 {
+			t.Error("expected exactly 1 item in the date array, instead got", s[1])
+		}
+	}
+}
+
 func TestGetSessionsByDateRange(t *testing.T) {
 	j, err := queries.GetSessionsByDateRangeAsGeoJSON(ctx, GetSessionsByDateRangeAsGeoJSONParams{
 		StartDate: pgtype.Date{Time: time.Date(2023, 12, 31, 0, 0, 0, 0, time.UTC), Valid: true},
@@ -222,7 +297,10 @@ func TestGetSessionsByDateRange(t *testing.T) {
 	}
 
 	var result types.SessionWithVenueFeatureCollection
-	json.Unmarshal(j, &result)
+	if err := json.Unmarshal(j, &result); err != nil {
+		t.Errorf("error when unmarshalling: %v", err)
+		t.FailNow()
+	}
 	if len(result.Features) == 0 {
 		t.Errorf("expected at least 1 feature, got %v", len(result.Features))
 		t.FailNow()

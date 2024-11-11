@@ -78,3 +78,86 @@ CREATE TABLE london_jam_sessions.ratings (
 -- create indices
 CREATE INDEX ratings_session_fkey_idx ON london_jam_sessions.ratings (session);
 CREATE INDEX ratings_comment_fkey_idx ON london_jam_sessions.ratings (comment);
+
+-- create funcs to get session matches by date (range), used in queries
+CREATE OR REPLACE FUNCTION london_jam_sessions.sessions_in_date_range(start date, stop date) 
+RETURNS TABLE (session_id int, dates date[])
+AS $$
+    BEGIN
+        RETURN QUERY
+        SELECT s.session_id, array_agg(dates_in_range.d::date) AS dates
+        FROM (
+            SELECT generate_series(start, stop, interval '1 day') d
+        ) dates_in_range
+        CROSS JOIN london_jam_sessions.jamsessions s
+        WHERE s.interval = 'Daily' AND s.start_time_utc::date <= stop
+        OR (
+            s.start_time_utc::date >= start
+            AND start_time_utc::date < stop + interval '1 day'
+            AND interval = 'Once'
+        ) 
+        OR (
+            s.interval = 'Weekly' AND (dates_in_range.d::date - s.start_time_utc::date) % 7 = 0 
+        ) 
+        OR (
+            s.interval = 'Fortnightly' AND (dates_in_range.d::date - s.start_time_utc::date) % 14 = 0 
+        )
+        OR (
+            s.interval = 'FirstOfMonth' AND CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 1
+        )
+        OR (
+            s.interval = 'SecondOfMonth' AND CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 2
+        )
+        OR (
+            s.interval = 'ThirdOfMonth' AND CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 3
+        )
+        OR (
+            s.interval = 'FourthOfMonth' AND CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 4
+        )
+        OR s.interval = 'LastOfMonth' AND EXTRACT(MONTH FROM (dates_in_range.d + interval '7 day')) != EXTRACT(MONTH FROM dates_in_range.d)
+        GROUP BY s.session_id;
+    END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION london_jam_sessions.sessions_on_date(d date) 
+RETURNS TABLE (session_id int, dates date[])
+AS $$
+    BEGIN
+        RETURN QUERY
+        SELECT s.session_id, ARRAY[d] FROM london_jam_sessions.jamsessions s
+        WHERE s.interval = 'Daily' AND s.start_time_utc::date <= d
+        OR (
+            s.start_time_utc::date = d::date
+            AND s.interval = 'Once'
+        ) 
+        OR (
+            s.interval = 'Weekly' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM d::date)
+        ) 
+        OR (
+            s.interval = 'Fortnightly' AND (d::date - s.start_time_utc::date) % 14 = 0 -- check if the number of days between is divisible by 14
+        )
+        OR (
+            s.interval = 'FirstOfMonth' AND CEIL (
+                EXTRACT(DAY FROM d) / 7
+            ) = 1
+        )
+        OR (
+            s.interval = 'SecondOfMonth' AND CEIL (
+                EXTRACT(DAY FROM d) / 7
+            ) = 2
+        )
+        OR (
+            s.interval = 'ThirdOfMonth' AND CEIL (
+                EXTRACT(DAY FROM d) / 7
+            ) = 3
+        )
+        OR (
+            s.interval = 'FourthOfMonth' AND CEIL (
+                EXTRACT(DAY FROM d) / 7
+            ) = 4
+        )
+        OR s.interval = 'LastOfMonth' AND (
+            EXTRACT(MONTH FROM (d::date + interval '7 day')) != EXTRACT(MONTH FROM d) 
+        );
+    END;
+$$ LANGUAGE plpgsql;

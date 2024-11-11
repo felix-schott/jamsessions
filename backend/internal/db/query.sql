@@ -61,43 +61,11 @@ SELECT public.ST_AsGeoJSON(t.*) FROM t;
 
 -- name: GetSessionsByDateAsGeoJSON :one
 WITH t AS (
-    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating 
+    FROM london_jam_sessions.sessions_on_date(sqlc.arg(date)::date) d
+    LEFT OUTER JOIN london_jam_sessions.jamsessions s ON d.session_id = s.session_id
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
-    WHERE interval = 'Daily' 
-    OR (
-        start_time_utc::date = sqlc.arg(date)::date
-        AND interval = 'Once'
-    ) 
-    OR (
-        interval = 'Weekly' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM sqlc.arg(date)::date)
-    ) 
-    OR (
-        interval = 'Fortnightly' AND (sqlc.arg(date)::date - start_time_utc::date) % 14 = 0 -- check if the number of days between is divisible by 14
-    )
-    OR (
-        interval = 'FirstOfMonth' AND CEIL (
-            EXTRACT(DAY FROM sqlc.arg(date)) / 7
-        ) = 1
-    )
-    OR (
-        interval = 'SecondOfMonth' AND CEIL (
-            EXTRACT(DAY FROM sqlc.arg(date)) / 7
-        ) = 2
-    )
-    OR (
-        interval = 'ThirdOfMonth' AND CEIL (
-            EXTRACT(DAY FROM sqlc.arg(date)) / 7
-        ) = 3
-    )
-    OR (
-        interval = 'FourthOfMonth' AND CEIL (
-            EXTRACT(DAY FROM sqlc.arg(date)) / 7
-        ) = 4
-    )
-    OR interval = 'LastOfMonth' AND (
-        EXTRACT(MONTH FROM (sqlc.arg(date)::date + interval '7 day')) != EXTRACT(MONTH FROM sqlc.arg(date)) 
-    )
     GROUP BY s.session_id, l.venue_id
 )
 SELECT json_build_object(
@@ -105,67 +73,21 @@ SELECT json_build_object(
     'features', json_agg(public.ST_AsGeoJSON(t.*)::json)
 ) FROM t;
 
+-- name: GetSessionIdsByDateRange :many
+SELECT * FROM london_jam_sessions.sessions_in_date_range(sqlc.arg(start_date)::date, sqlc.arg(end_date)::date);
+
+-- name: GetSessionIdsByDate :many
+SELECT * FROM london_jam_sessions.sessions_on_date(sqlc.arg(date)::date);
+
 -- name: GetSessionsByDateRangeAsGeoJSON :one
-WITH dates_in_range AS (
-    SELECT generate_series(sqlc.arg(start_date)::date, sqlc.arg(end_date)::date, interval '1 day') d
-), t AS (
-    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+WITH t AS (
+    SELECT d.d, s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating 
+    FROM london_jam_sessions.jamsessions s 
+    LEFT OUTER JOIN london_jam_sessions.sessions_in_date_range(sqlc.arg(start_date)::date, sqlc.arg(end_date)::date) d 
+    ON d.session_id = s.session_id 
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
-    WHERE interval = 'Daily' 
-    OR (
-        start_time_utc::date >= sqlc.arg(start_date)::date
-        AND start_time_utc::date < sqlc.arg(end_date)::date + interval '1 day'
-        AND interval = 'Once'
-    ) 
-    OR (
-        interval = 'Weekly' 
-        AND EXTRACT(dow FROM sqlc.arg(start_date)::date) <= EXTRACT(dow FROM s.start_time_utc)
-        AND EXTRACT(dow FROM sqlc.arg(end_date)::date) >= EXTRACT(dow FROM s.start_time_utc)
-    ) 
-    OR (
-        interval = 'Fortnightly' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE (dates_in_range.d::date - s.start_time_utc::date) % 14 = 0 
-            -- generate a list of dates between start/end
-            -- check if for any of them the condition is true
-        )
-    )
-    OR (
-        interval = 'FirstOfMonth' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 1
-        ) 
-    )
-    OR (
-        interval = 'SecondOfMonth' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 2
-        ) 
-    )
-    OR (
-        interval = 'ThirdOfMonth' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 3
-        ) 
-    )
-    OR (
-        interval = 'FourthOfMonth' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 4
-        ) 
-    )
-    OR interval = 'LastOfMonth' AND EXISTS (
-        SELECT *
-        FROM dates_in_range
-        WHERE EXTRACT(MONTH FROM (dates_in_range.d + interval '7 day')) != EXTRACT(MONTH FROM dates_in_range.d) 
-    )
-    GROUP BY s.session_id, l.venue_id
+    GROUP BY s.session_id, l.venue_id, d.d
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -200,45 +122,12 @@ SELECT json_build_object(
 
 -- name: GetSessionsByDateAndGenreAsGeoJSON :one
 WITH t AS (
-    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+    SELECT d.d, s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+    LEFT OUTER JOIN london_jam_sessions.sessions_on_date(sqlc.arg(date)::date) d ON d.session_id = s.session_id 
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> sqlc.arg(genres) 
-    AND interval = 'Daily'
-    OR (
-        start_time_utc::date = sqlc.arg(date)::date
-        AND interval = 'Once'
-    ) 
-    OR (
-        interval = 'Weekly' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM sqlc.arg(date)::date)
-    ) 
-    OR (
-        interval = 'Fortnightly' AND (sqlc.arg(date)::date - start_time_utc::date) % 14 = 0
-    )
-    OR (
-        interval = 'FirstOfMonth' AND CEIL (
-            EXTRACT(DAY FROM sqlc.arg(date)) / 7
-        ) = 1
-    )
-    OR (
-        interval = 'SecondOfMonth' AND CEIL (
-            EXTRACT(DAY FROM sqlc.arg(date)) / 7
-        ) = 2
-    )
-    OR (
-        interval = 'ThirdOfMonth' AND CEIL (
-            EXTRACT(DAY FROM sqlc.arg(date)) / 7
-        ) = 3
-    )
-    OR (
-        interval = 'FourthOfMonth' AND CEIL (
-            EXTRACT(DAY FROM sqlc.arg(date)) / 7
-        ) = 4
-    )
-    OR interval = 'LastOfMonth' AND (
-        EXTRACT(MONTH FROM (sqlc.arg(date)::date + interval '7 day')) != EXTRACT(MONTH FROM sqlc.arg(date)::date) 
-    )
-    GROUP BY s.session_id, l.venue_id
+    GROUP BY s.session_id, l.venue_id, d.d
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -246,67 +135,15 @@ SELECT json_build_object(
 ) FROM t;
 
 -- name: GetSessionsByDateRangeAndGenreAsGeoJSON :one
-WITH dates_in_range AS (
-    SELECT generate_series(sqlc.arg(start_date)::date, sqlc.arg(end_date)::date, interval '1 day') d
-), t AS (
-    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+WITH t AS (
+    SELECT d.d, s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating 
+    FROM london_jam_sessions.jamsessions s 
+    LEFT OUTER JOIN london_jam_sessions.sessions_in_date_range(sqlc.arg(start_date)::date, sqlc.arg(end_date)::date) d 
+    ON d.session_id = s.session_id 
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
-    WHERE s.genres @> sqlc.arg(genres) 
-    AND interval = 'Daily'
-    OR (
-        start_time_utc::date >= sqlc.arg(start_date)::date
-        AND start_time_utc::date < sqlc.arg(end_date)::date + interval '1 day'
-        AND interval = 'Once'
-    ) 
-    OR (
-        interval = 'Weekly' 
-        AND EXTRACT(dow FROM sqlc.arg(start_date)::date) <= EXTRACT(dow FROM s.start_time_utc)
-        AND EXTRACT(dow FROM sqlc.arg(end_date)::date) >= EXTRACT(dow FROM s.start_time_utc)
-    ) 
-    OR (
-        interval = 'Fortnightly' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE (dates_in_range.d::date - s.start_time_utc::date) % 14 = 0 
-            -- generate a list of dates between start/end
-            -- check if for any of them the condition is true
-        )
-    )
-    OR (
-        interval = 'FirstOfMonth' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 1
-        ) 
-    )
-    OR (
-        interval = 'SecondOfMonth' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 2
-        ) 
-    )
-    OR (
-        interval = 'ThirdOfMonth' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 3
-        ) 
-    )
-    OR (
-        interval = 'FourthOfMonth' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 4
-        ) 
-    )
-    OR interval = 'LastOfMonth' AND EXISTS (
-        SELECT *
-        FROM dates_in_range
-        WHERE EXTRACT(MONTH FROM (dates_in_range.d + interval '7 day')) != EXTRACT(MONTH FROM dates_in_range.d) 
-    )
-    GROUP BY s.session_id, l.venue_id
+    WHERE s.genres @> sqlc.arg(genres)
+    GROUP BY s.session_id, l.venue_id, d.d
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -316,45 +153,12 @@ SELECT json_build_object(
 
 -- name: GetSessionsByDateAndBacklineAsGeoJSON :one
 WITH t AS (
-    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+    SELECT d.d, s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+    LEFT OUTER JOIN london_jam_sessions.sessions_on_date(sqlc.arg(date)::date) d ON d.session_id = s.session_id
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE l.backline @> sqlc.arg(backline)
-    AND interval = 'Daily'
-    OR (
-        start_time_utc::date = sqlc.arg(date)::date
-        AND interval = 'Once'
-    ) 
-    OR (
-        interval = 'Weekly' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM sqlc.arg(date)::date)
-    ) 
-    OR (
-        interval = 'Fortnightly' AND (sqlc.arg(date)::date - start_time_utc::date) % 14 = 0
-    )
-    OR (
-        interval = 'FirstOfMonth' AND CEIL (
-            EXTRACT(DAY FROM sqlc.arg(date)) / 7
-        ) = 1
-    )
-    OR (
-        interval = 'SecondOfMonth' AND CEIL (
-            EXTRACT(DAY FROM sqlc.arg(date)) / 7
-        ) = 2
-    )
-    OR (
-        interval = 'ThirdOfMonth' AND CEIL (
-            EXTRACT(DAY FROM sqlc.arg(date)) / 7
-        ) = 3
-    )
-    OR (
-        interval = 'FourthOfMonth' AND CEIL (
-            EXTRACT(DAY FROM sqlc.arg(date)) / 7
-        ) = 4
-    )
-    OR interval = 'LastOfMonth' AND (
-        EXTRACT(MONTH FROM (sqlc.arg(date)::date + interval '7 day')) != EXTRACT(MONTH FROM sqlc.arg(date)::date) 
-    )
-    GROUP BY s.session_id, l.venue_id
+    GROUP BY s.session_id, l.venue_id, d.d
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -362,67 +166,15 @@ SELECT json_build_object(
 ) FROM t;
 
 -- name: GetSessionsByDateRangeAndBacklineAsGeoJSON :one
-WITH dates_in_range AS (
-    SELECT generate_series(sqlc.arg(start_date)::date, sqlc.arg(end_date)::date, interval '1 day') d
-), t AS (
-    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+WITH t AS (
+    SELECT d.d, s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating 
+    FROM london_jam_sessions.jamsessions s 
+    LEFT OUTER JOIN london_jam_sessions.sessions_in_date_range(sqlc.arg(start_date)::date, sqlc.arg(end_date)::date) d 
+    ON d.session_id = s.session_id 
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE l.backline @> sqlc.arg(backline)
-    AND interval = 'Daily'
-    OR (
-        start_time_utc::date >= sqlc.arg(start_date)::date
-        AND start_time_utc::date < sqlc.arg(end_date)::date + interval '1 day'
-        AND interval = 'Once'
-    ) 
-    OR (
-        interval = 'Weekly' 
-        AND EXTRACT(dow FROM sqlc.arg(start_date)::date) <= EXTRACT(dow FROM s.start_time_utc)
-        AND EXTRACT(dow FROM sqlc.arg(end_date)::date) >= EXTRACT(dow FROM s.start_time_utc)
-    ) 
-    OR (
-        interval = 'Fortnightly' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE (dates_in_range.d::date - s.start_time_utc::date) % 14 = 0 
-            -- generate a list of dates between start/end
-            -- check if for any of them the condition is true
-        )
-    )
-    OR (
-        interval = 'FirstOfMonth' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 1
-        ) 
-    )
-    OR (
-        interval = 'SecondOfMonth' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 2
-        ) 
-    )
-    OR (
-        interval = 'ThirdOfMonth' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 3
-        ) 
-    )
-    OR (
-        interval = 'FourthOfMonth' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 4
-        ) 
-    )
-    OR interval = 'LastOfMonth' AND EXISTS (
-        SELECT *
-        FROM dates_in_range
-        WHERE EXTRACT(MONTH FROM (dates_in_range.d + interval '7 day')) != EXTRACT(MONTH FROM dates_in_range.d) 
-    )
-    GROUP BY s.session_id, l.venue_id
+    GROUP BY s.session_id, l.venue_id, d.d
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -431,46 +183,13 @@ SELECT json_build_object(
 
 -- name: GetSessionsByDateAndGenreAndBacklineAsGeoJSON :one
 WITH t AS (
-    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+    SELECT d.d, s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+    LEFT OUTER JOIN london_jam_sessions.sessions_on_date(sqlc.arg(date)::date) d ON d.session_id = s.session_id
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> sqlc.arg(genres)
     AND l.backline @> sqlc.arg(backline)
-    AND interval = 'Daily'
-    OR (
-        start_time_utc::date = sqlc.arg(date)::date
-        AND interval = 'Once'
-    ) 
-    OR (
-        interval = 'Weekly' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM sqlc.arg(date)::date)
-    ) 
-    OR (
-        interval = 'Fortnightly' AND (sqlc.arg(date)::date - start_time_utc::date) % 14 = 0
-    )
-    OR (
-        interval = 'FirstOfMonth' AND CEIL (
-            EXTRACT(DAY FROM sqlc.arg(date)) / 7
-        ) = 1
-    )
-    OR (
-        interval = 'SecondOfMonth' AND CEIL (
-            EXTRACT(DAY FROM sqlc.arg(date)) / 7
-        ) = 2
-    )
-    OR (
-        interval = 'ThirdOfMonth' AND CEIL (
-            EXTRACT(DAY FROM sqlc.arg(date)) / 7
-        ) = 3
-    )
-    OR (
-        interval = 'FourthOfMonth' AND CEIL (
-            EXTRACT(DAY FROM sqlc.arg(date)) / 7
-        ) = 4
-    )
-    OR interval = 'LastOfMonth' AND (
-        EXTRACT(MONTH FROM (sqlc.arg(date)::date + interval '7 day')) != EXTRACT(MONTH FROM sqlc.arg(date)::date) 
-    )
-    GROUP BY s.session_id,l.venue_id
+    GROUP BY s.session_id, l.venue_id, d.d
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
@@ -478,68 +197,16 @@ SELECT json_build_object(
 ) FROM t;
 
 -- name: GetSessionsByDateRangeAndGenreAndBacklineAsGeoJSON :one
-WITH dates_in_range AS (
-    SELECT generate_series(sqlc.arg(start_date)::date, sqlc.arg(end_date)::date, interval '1 day') d
-), t AS (
-    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating FROM london_jam_sessions.jamsessions s
+WITH t AS (
+    SELECT d.d, s.*, l.*, coalesce(round(avg(rating), 2), 0.0)::real AS rating 
+    FROM london_jam_sessions.jamsessions s 
+    LEFT OUTER JOIN london_jam_sessions.sessions_in_date_range(sqlc.arg(start_date)::date, sqlc.arg(end_date)::date) d 
+    ON d.session_id = s.session_id 
     JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
     LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
     WHERE s.genres @> sqlc.arg(genres)
     AND l.backline @> sqlc.arg(backline)
-    AND interval = 'Daily'
-    OR (
-        start_time_utc::date >= sqlc.arg(start_date)::date
-        AND start_time_utc::date < sqlc.arg(end_date)::date + interval '1 day'
-        AND interval = 'Once'
-    ) 
-    OR (
-        interval = 'Weekly' 
-        AND EXTRACT(dow FROM sqlc.arg(start_date)::date) <= EXTRACT(dow FROM s.start_time_utc)
-        AND EXTRACT(dow FROM sqlc.arg(end_date)::date) >= EXTRACT(dow FROM s.start_time_utc)
-    ) 
-    OR (
-        interval = 'Fortnightly' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE (dates_in_range.d::date - s.start_time_utc::date) % 14 = 0 
-            -- generate a list of dates between start/end
-            -- check if for any of them the condition is true
-        )
-    )
-    OR (
-        interval = 'FirstOfMonth' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 1
-        ) 
-    )
-    OR (
-        interval = 'SecondOfMonth' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 2
-        ) 
-    )
-    OR (
-        interval = 'ThirdOfMonth' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 3
-        ) 
-    )
-    OR (
-        interval = 'FourthOfMonth' AND EXISTS (
-            SELECT *
-            FROM dates_in_range
-            WHERE CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 4
-        ) 
-    )
-    OR interval = 'LastOfMonth' AND EXISTS (
-        SELECT *
-        FROM dates_in_range
-        WHERE EXTRACT(MONTH FROM (dates_in_range.d + interval '7 day')) != EXTRACT(MONTH FROM dates_in_range.d) 
-    )
-    GROUP BY s.session_id, l.venue_id
+    GROUP BY s.session_id, l.venue_id, d.d
 )
 SELECT json_build_object(
     'type', 'FeatureCollection',
