@@ -90,7 +90,7 @@ AS $$
             SELECT generate_series(start, stop, interval '1 day') d
         ) dates_in_range
         CROSS JOIN london_jam_sessions.jamsessions s
-        WHERE s.interval = 'Daily' AND s.start_time_utc::date >= start
+        WHERE s.interval = 'Daily' AND s.start_time_utc::date <= stop
         OR (
             s.start_time_utc::date >= start
             AND start_time_utc::date < stop + interval '1 day'
@@ -120,12 +120,12 @@ AS $$
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION london_jam_sessions.sessions_on_date(d date) 
-RETURNS TABLE (session_id int)
+RETURNS TABLE (session_id int, dates date[])
 AS $$
     BEGIN
         RETURN QUERY
-        SELECT s.session_id FROM london_jam_sessions.jamsessions s
-        WHERE s.interval = 'Daily' 
+        SELECT s.session_id, ARRAY[d] FROM london_jam_sessions.jamsessions s
+        WHERE s.interval = 'Daily' AND s.start_time_utc::date <= d
         OR (
             s.start_time_utc::date = d::date
             AND s.interval = 'Once'

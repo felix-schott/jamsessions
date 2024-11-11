@@ -2,6 +2,7 @@ include .env
 
 .PHONY = test-ci test-db test-geocoding test-server test-cli
 
+# SHELL := /bin/bash
 TEST_DB_PORT = 54930
 DEV_SERVER_PORT = 36230
 
@@ -15,10 +16,14 @@ internal/db/models.go: internal/db/schema.sql internal/db/query.sql internal/db/
 test-ci: internal/db/models.go bin/dbcli # run in ci pipeline
 	@TEST_DB_PORT=$(TEST_DB_PORT) docker compose -f test.docker-compose.yml up test_db -d
 	@sleep 7 # wait until the database has started up
-	@DB_URL=$(DB_URL) PATH=${PATH}:${CURDIR}/bin go test ./internal/db ./internal/geocoding ./cmd/server ./cmd/dbcli
-	@TEST_DB_PORT=$(TEST_DB_PORT) docker compose -f test.docker-compose.yml down test_db
-	@docker system prune -af &> /dev/null
-
+	@if go clean -testcache && DB_URL=$(DB_URL) PATH=${PATH}:${CURDIR}/bin go test ./internal/db ./internal/geocoding ./cmd/server ./cmd/dbcli; then \
+		TEST_DB_PORT=$(TEST_DB_PORT) docker compose -f test.docker-compose.yml down test_db; \
+		docker system prune -af &> /dev/null; \
+	else \
+		TEST_DB_PORT=$(TEST_DB_PORT) docker compose -f test.docker-compose.yml down test_db; \
+		docker system prune -af &> /dev/null && exit 1; \
+	fi;
+	
 test-db: internal/db/models.go
 	TEST_DB_PORT=$(TEST_DB_PORT) docker compose -f test.docker-compose.yml up test_db -d
 	sleep 7 # wait until the database has started up

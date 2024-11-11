@@ -49,7 +49,7 @@ func checkResultSetForSessionIds(t *testing.T, sessionIds []int32, body types.Se
 
 func TestHandlers(t *testing.T) {
 
-	slog.SetLogLoggerLevel(slog.LevelError) // change this to see more log informations
+	slog.SetLogLoggerLevel(slog.LevelInfo) // change this to see more log informations
 
 	// setup database connection
 	pool, err := dbutils.CreatePool(ctx)

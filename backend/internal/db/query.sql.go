@@ -279,15 +279,15 @@ const getSessionIdsByDate = `-- name: GetSessionIdsByDate :many
 SELECT sessions_on_date FROM london_jam_sessions.sessions_on_date($1::date)
 `
 
-func (q *Queries) GetSessionIdsByDate(ctx context.Context, date pgtype.Date) ([]*int32, error) {
+func (q *Queries) GetSessionIdsByDate(ctx context.Context, date pgtype.Date) ([]interface{}, error) {
 	rows, err := q.db.Query(ctx, getSessionIdsByDate, date)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []*int32
+	var items []interface{}
 	for rows.Next() {
-		var sessions_on_date *int32
+		var sessions_on_date interface{}
 		if err := rows.Scan(&sessions_on_date); err != nil {
 			return nil, err
 		}

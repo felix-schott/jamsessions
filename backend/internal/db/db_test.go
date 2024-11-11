@@ -229,8 +229,18 @@ func TestGetSessionIdsByDate(t *testing.T) {
 		t.Errorf("expected exactly 1 item in the result set")
 		t.FailNow()
 	}
-	if *result[0] != fixtureSessionId2 {
-		t.Errorf("expected fixture 2 (%v), got %v", fixtureSessionId2, *result[0])
+	s := result[0].([]any)
+	id := s[0].(int32)
+	dates := s[1].([]any)
+	if len(dates) != 1 {
+		t.Errorf("expected the dates array to be of size 1")
+	}
+	date := types.Date(dates[0].(time.Time))
+	if id != fixtureSessionId2 { // type cast
+		t.Errorf("expected fixture 2 (%v), got %v", fixtureSessionId2, s[0])
+	}
+	if date.String() != "2024-11-19" {
+		t.Errorf("expected the dates attribute to be 2024-11-19, got %v", date.String())
 	}
 }
 
