@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Calendar Versioning](https://calver.org/) (`YYYY.MM.MICRO-TAG`).
 
+## [v2024.11.2-beta] - 2024-11-13
+
+## Added
+
+- Added rate limiter to geocoding module (PR [#66](https://github.com/felix-schott/jamsessions/pull/66))
+
 ## [v2024.11.1-beta] - 2024-11-13
 
 ## Fixed
