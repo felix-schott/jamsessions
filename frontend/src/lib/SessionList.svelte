@@ -1,7 +1,9 @@
 <script lang="ts">
-	import type { SessionWithVenueFeature } from '../types';
+	import { Interval, type SessionWithVenueFeature } from '../types';
 	import { selectedSessions } from '../stores';
 	import { untrack } from 'svelte';
+	import InfoIcon from './icons/InfoIcon.svelte';
+	import SidePanel from './SidePanel.svelte';
 
 	type SessionsByDate = { [key: string]: SessionWithVenueFeature[] };
 	let sessionsByDate: SessionsByDate = $state({});
@@ -43,6 +45,33 @@
 					minute: '2-digit'
 				})}</b
 			>: {session.properties.session_name} at {session.properties.venue_name}
+			{#if session.properties.interval === Interval.IRREGULARWEEKLY}
+				<span
+					class="irregular-tag"
+					title="Irregular session - may or may not take place on this day."
+					>irregular<InfoIcon
+						style="margin-left: 0.2em;"
+						colour="white"
+						title="Irregular session - may or may not take place on this day."
+					/></span
+				>
+			{/if}
 		</p>
 	{/each}
 {/each}
+
+<style>
+	.irregular-tag {
+		margin-left: 0.3em;
+		padding: 0.1em 0.6em;
+		background: var(--accent-color);
+		color: white;
+		font-size: smaller;
+		border: none;
+		border-radius: 24px;
+		display: inline-flex;
+		justify-content: center;
+		align-items: center;
+		vertical-align: text-top;
+	}
+</style>

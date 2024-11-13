@@ -31,6 +31,7 @@ const (
 	ThirdOfMonth
 	FourthOfMonth
 	LastOfMonth
+	IrregularWeekly
 )
 
 type Backline int
@@ -66,7 +67,6 @@ func (b Backline) String() string {
 
 type Genre int
 
-// TODO enum for genres
 const (
 	Any Genre = iota
 	StraightAhead
@@ -79,6 +79,7 @@ const (
 	Blues
 	Folk
 	Rock
+	Pop
 	WorldMusic
 )
 
@@ -91,6 +92,7 @@ var genreStrToEnum = map[string]Genre{
 	"Blues":               Blues,
 	"Folk":                Folk,
 	"Rock":                Rock,
+	"Pop":                 Pop,
 	"World_Music":         WorldMusic,
 	"Modern_Jazz":         ModernJazz,
 	"Trad_Jazz":           TradJazz,
@@ -104,26 +106,6 @@ func (b Genre) String() string {
 	}
 	return ""
 }
-
-// func matchesIrregularInterval(d *time.Time, i Interval) bool {
-// 	nthInMonth := math.Ceil(float64(d.Day()) / 7)
-// 	if i == FirstOfMonth && nthInMonth == 1 {
-// 		return true
-// 	}
-// 	if i == SecondOfMonth && nthInMonth == 2 {
-// 		return true
-// 	}
-// 	if i == ThirdOfMonth && nthInMonth == 3 {
-// 		return true
-// 	}
-// 	if i == FourthOfMonth && nthInMonth == 4 {
-// 		return true
-// 	}
-// 	if i == LastOfMonth && d.AddDate(0, 0, 7).Month() != d.Month() {
-// 		return true
-// 	}
-// 	return false
-// }
 
 func GetVenues(c *fuego.ContextNoBody) (types.VenueFeatureCollection, error) {
 	var geojson types.FeatureCollection[types.VenueFeature]

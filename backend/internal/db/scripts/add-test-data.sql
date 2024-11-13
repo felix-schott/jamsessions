@@ -19,6 +19,12 @@ BEGIN
     INSERT INTO london_jam_sessions.jamsessions (
         session_name, venue, description, start_time_utc, duration_minutes, interval, session_website, genres
     ) VALUES (
+        'Irregular Jam', inserted_venue, 'House band plays first set. Free entry.', '2024-08-25T14:00:00Z', 180, 'IrregularWeekly', 'https://www.spiceoflifesoho.com/events/different-planet-presents-jazz-comments-jazz-jam-6/', '{Straight-Ahead_Jazz}'
+    );
+
+    INSERT INTO london_jam_sessions.jamsessions (
+        session_name, venue, description, start_time_utc, duration_minutes, interval, session_website, genres
+    ) VALUES (
         'Daily Jam Placeholder', inserted_venue, 'House band plays first set. Free entry.', '2024-08-25T19:00:00Z', 120, 'Daily', 'https://www.spiceoflifesoho.com/events/different-planet-presents-jazz-comments-jazz-jam-6/', '{Straight-Ahead_Jazz,Blues}'
     ) RETURNING session_id INTO inserted_session;
 

@@ -36,7 +36,7 @@
 	{#snippet content()}
 		<span>
 			<div style="display: flex; flex-direction: column;">
-				{#each propertiesList as properties, idx}
+				{#each propertiesList as properties}
 					<span style="margin-top: 0.4em;" onclick={() => onClick(properties.session_id!)}>
 						{#if propertiesList.length > 1}
 							<b>{properties.session_name}</b><br />
@@ -44,10 +44,9 @@
 						<table>
 							<tbody>
 								<tr
-									><td><TimeIcon title="Time of event" /></td><td
-										>{constructTimeString(properties)}</td
-									></tr
-								>
+									><td><TimeIcon title="Time of event" /></td>
+									<td>{@html constructTimeString(properties)}</td>
+								</tr>
 								<tr
 									><td><FileTrayIcon title="Genre" /></td>
 									<td>{properties.genres.map((i) => i.replace('_', ' ')).join(', ')}</td>
@@ -57,9 +56,6 @@
 						<div style="text-align: right; padding: 0.3em;">
 							<i>View more ...</i>
 						</div>
-						<!-- {#if idx !== propertiesList.length - 1}
-								<hr />
-							{/if} -->
 					</span>
 				{/each}
 			</div>

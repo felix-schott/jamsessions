@@ -49,6 +49,7 @@
 		right: 0.7em;
 		line-height: 1ex;
 		font-weight: bolder;
+		font-size: large;
 		z-index: 800000000;
 	}
 

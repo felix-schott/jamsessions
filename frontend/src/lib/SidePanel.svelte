@@ -30,7 +30,7 @@
 	}
 
 	.padding {
-		padding: 1em 3em;
+		padding: 3em;
 	}
 
 	.side-panel > div {

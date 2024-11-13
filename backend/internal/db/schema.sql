@@ -42,9 +42,9 @@ CREATE TABLE london_jam_sessions.jamsessions (
     session_id SERIAL PRIMARY KEY,
     session_name VARCHAR(250) NOT NULL,
     venue INTEGER NOT NULL REFERENCES london_jam_sessions.venues(venue_id) ON DELETE CASCADE, -- if a venue is deleted, all sessions associated with the venue should be deleted too
-    genres VARCHAR(50)[] CHECK(genres <@ ARRAY['Straight-Ahead_Jazz'::VARCHAR, 'Modern_Jazz'::VARCHAR, 'Trad_Jazz'::VARCHAR, 'Jazz-Funk'::VARCHAR, 'Fusion'::VARCHAR, 'Latin_Jazz'::VARCHAR, 'Funk'::VARCHAR, 'Blues'::VARCHAR, 'Folk'::VARCHAR, 'Rock'::VARCHAR, 'World_Music'::VARCHAR]),
+    genres VARCHAR(50)[] CHECK(genres <@ ARRAY['Straight-Ahead_Jazz'::VARCHAR, 'Modern_Jazz'::VARCHAR, 'Trad_Jazz'::VARCHAR, 'Jazz-Funk'::VARCHAR, 'Fusion'::VARCHAR, 'Latin_Jazz'::VARCHAR, 'Funk'::VARCHAR, 'Blues'::VARCHAR, 'Folk'::VARCHAR, 'Rock'::VARCHAR, 'Pop'::VARCHAR, 'World_Music'::VARCHAR]),
     start_time_utc TIMESTAMPTZ NOT NULL,
-    interval VARCHAR(13) NOT NULL CHECK (interval IN ('Once', 'Daily', 'Weekly', 'FirstOfMonth', 'SecondOfMonth', 'ThirdOfMonth', 'FourthOfMonth', 'LastOfMonth')),
+    interval VARCHAR(50) NOT NULL CHECK (interval IN ('Once', 'Daily', 'Weekly', 'FirstOfMonth', 'SecondOfMonth', 'ThirdOfMonth', 'FourthOfMonth', 'LastOfMonth', 'IrregularWeekly')),
     duration_minutes SMALLINT NOT NULL,
     description TEXT NOT NULL,
 	session_website VARCHAR(2000),
@@ -97,7 +97,7 @@ AS $$
             AND interval = 'Once'
         ) 
         OR (
-            s.interval = 'Weekly' AND (dates_in_range.d::date - s.start_time_utc::date) % 7 = 0 
+            s.interval IN ('Weekly', 'IrregularWeekly') AND (dates_in_range.d::date - s.start_time_utc::date) % 7 = 0 
         ) 
         OR (
             s.interval = 'Fortnightly' AND (dates_in_range.d::date - s.start_time_utc::date) % 14 = 0 
@@ -131,7 +131,7 @@ AS $$
             AND s.interval = 'Once'
         ) 
         OR (
-            s.interval = 'Weekly' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM d::date)
+            s.interval IN ('Weekly', 'IrregularWeekly') AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM d::date)
         ) 
         OR (
             s.interval = 'Fortnightly' AND (d::date - s.start_time_utc::date) % 14 = 0 -- check if the number of days between is divisible by 14
