@@ -8,56 +8,54 @@
 -->
 
 <script lang="ts">
-	import type { Snippet } from "svelte";
+	interface Props {
+		style?: string;
+		type?: string;
+		class?: string;
+		onclick: () => void;
+	}
+	let content: string = $state('');
 
-    interface Props {
-        style?: string
-        type?: string
-        class?: string
-        onclick: () => void;
-    }
-    let content: string = $state("");
+	let { style = '', type = '', class: _class = '', onclick }: Props = $props();
+	let allClasses = `window-control-button ${_class}`;
 
-    let { style = "", type = "", class: _class = "", onclick }: Props = $props();
-    let allClasses = `window-control-button ${_class}`;
-
-    switch (type) {
-        case "close":
-            content = '×'
-            break
-        case "minimise":
-            content =  '-'
-            break
-        case "maximise":
-            content = '+'
-            break
-    }
+	switch (type) {
+		case 'close':
+			content = '×';
+			break;
+		case 'minimise':
+			content = '-';
+			break;
+		case 'maximise':
+			content = '+';
+			break;
+	}
 </script>
 
-<button class={allClasses} {style} {onclick} >
-{content}
+<button class={allClasses} {style} {onclick}>
+	{content}
 </button>
 
 <style>
-    button {
-        background: none;
-    }
-    .window-control-button {
-        cursor: pointer;
-        display: inline-block;
-        padding: 0.5em;
-        position: absolute;
-        top: 0.7em;
-        right: 0.7em;
-        line-height: 1ex;
-        font-weight: bolder;
-        z-index: 800000000;
-    }
+	button {
+		background: none;
+	}
+	.window-control-button {
+		cursor: pointer;
+		display: inline-block;
+		padding: 0.5em;
+		position: absolute;
+		top: 0.7em;
+		right: 0.7em;
+		line-height: 1ex;
+		font-weight: bolder;
+		z-index: 800000000;
+	}
 
-    @media (max-width: 480px) {
-        .window-control-button {
-            top: 0.2em;
-            right: 0.2em;
-        }
+	@media (max-width: 480px) {
+		.window-control-button {
+			top: 0.2em;
+			right: 0.2em;
+		}
 	}
 </style>

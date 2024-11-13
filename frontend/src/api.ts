@@ -21,8 +21,9 @@ export const getVenues = async (): Promise<VenuesFeatureCollection> => {
     }
 }
 
-interface SessionOptions {
+export interface SessionOptions {
     date?: Date
+    endDate?: Date
     genre?: Genre
     backline?: Backline[]
 }
@@ -30,8 +31,11 @@ interface SessionOptions {
 export const getSessions = async (opts: SessionOptions = {}): Promise<SessionWithVenueFeatureCollection> => {
     // parse opts and build URL
     let queryParams: string[] = []
-    if (opts.date) {
+    if (opts.date && !opts.endDate) {
         queryParams.push("date=" + opts.date.toISOString().slice(0, 10))
+    }
+    if (opts.date && opts.endDate) {
+        queryParams.push("date=" + opts.date.toISOString().slice(0, 10) + "%2F" + opts.endDate.toISOString().slice(0, 10))
     }
     if (opts.genre && opts.genre != Genre.ANY) {
         queryParams.push("genre=" + opts.genre)
@@ -138,9 +142,9 @@ export const patchSessionById = async (id: number, payload: SessionProperties | 
 }
 
 export const patchVenueById = async (id: number, payload: VenueProperties | {}): Promise<void> => {
-    let response = await fetch(API_ADDRESS + "/venues/" + id, { 
-        method: "PATCH", 
-        body: JSON.stringify(payload) 
+    let response = await fetch(API_ADDRESS + "/venues/" + id, {
+        method: "PATCH",
+        body: JSON.stringify(payload)
     })
     if (!response.ok) {
         throw new Error((await response.json() as ErrorResponse)["detail"])

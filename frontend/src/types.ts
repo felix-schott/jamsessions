@@ -2,31 +2,20 @@ import type { FeatureCollection, Feature, Point } from "geojson";
 
 export enum MapLayer {
 	NONE,
-    SESSIONS,
-    VENUES
+	SESSIONS,
+	VENUES
 }
+
+export type TabOptions = "map" | "list" | "session";
 
 export enum Backline {
-	PA = 'PA', 
-	GUITAR_AMP = 'Guitar_Amp', 
-	BASS_AMP = 'Bass_Amp', 
+	PA = 'PA',
+	GUITAR_AMP = 'Guitar_Amp',
+	BASS_AMP = 'Bass_Amp',
 	KEYS = 'Keys',
-	DRUMS = 'Drums', 
-	MIC = 'Microphone', 
+	DRUMS = 'Drums',
+	MIC = 'Microphone',
 	MISC_PERCUSSION = 'MiscPercussion',
-}
-
-export interface VenueProperties {
-    venue_id?: number
-	venue_name: string
-	address_first_line: string
-	address_second_line?: string
-	city: string
-    postcode: string
-	venue_website: string
-	backline: Backline[]
-	venue_comments?: string[]
-	venue_dt_updated_utc?: Date
 }
 
 export enum Genre {
@@ -36,11 +25,11 @@ export enum Genre {
 	TRAD_JAZZ = 'Trad_Jazz',
 	JAZZ_FUNK = 'Jazz-Funk',
 	FUSION = 'Fusion',
-	LATIN_JAZZ = 'Latin_Jazz', 
+	LATIN_JAZZ = 'Latin_Jazz',
 	FUNK = 'Funk',
-	BLUES = 'Blues', 
-	FOLK = 'Folk', 
-	ROCK = 'Rock', 
+	BLUES = 'Blues',
+	FOLK = 'Folk',
+	ROCK = 'Rock',
 	WORLD_MUSIC = 'World_Music',
 }
 
@@ -50,18 +39,32 @@ export enum Interval {
 	WEEKLY = 'Weekly',
 	FIRSTOFMONTH = 'FirstOfMonth',
 	SECONDOFMONTH = 'SecondOfMonth',
-	THIRDOFMONTH = 'ThirdOfMonth' ,
-	FOURTHOFMONTH = 'FourthOfMonth', 
+	THIRDOFMONTH = 'ThirdOfMonth',
+	FOURTHOFMONTH = 'FourthOfMonth',
 	LASTOFMONTH = 'LastOfMonth'
 }
 
+export interface VenueProperties {
+	venue_id?: number
+	venue_name: string
+	address_first_line: string
+	address_second_line?: string
+	city: string
+	postcode: string
+	venue_website: string
+	backline: Backline[]
+	venue_comments?: string[]
+	venue_dt_updated_utc?: Date
+}
+
 export interface SessionProperties {
-    session_id?: number
+	session_id?: number
 	venue?: number
 	session_name: string
 	genres: Genre[]
 	description: string
 	start_time_utc: Date | string
+	dates?: string[]
 	interval: Interval
 	duration_minutes: number
 	session_website: string
@@ -73,12 +76,12 @@ export interface SessionComment {
 	comment_id: number
 	session: number
 	author: string
-	content: string            
-	dt_posted: string	
+	content: string
+	dt_posted: string
 	rating: number // between 1 and 5
 }
 
-export interface SessionPropertiesWithVenue extends SessionProperties, VenueProperties {};
+export interface SessionPropertiesWithVenue extends SessionProperties, VenueProperties { };
 
 export type SessionFeatureCollection = FeatureCollection<Point, SessionProperties>;
 export type SessionWithVenueFeatureCollection = FeatureCollection<Point, SessionPropertiesWithVenue>;

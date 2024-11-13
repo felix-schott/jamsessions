@@ -2,6 +2,7 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+  /* box-sizing: border-box; */
 
   /* font-synthesis: none;
   text-rendering: optimizeLegibility; */
@@ -20,12 +21,12 @@ a:hover {
   color: #535bf2;
 }
 
-body,
-#app {
+.clickable {
+  cursor: pointer;
+}
+
+body {
   margin: 0;
-  display: flex;
-  height: 100vh;
-  width: 100vw;
 }
 
 h1 {
@@ -33,7 +34,8 @@ h1 {
   line-height: 1.1;
 }
 
-input, textarea {
+input,
+textarea {
   font-family: inherit;
   font-size: inherit;
   border-radius: 4px;

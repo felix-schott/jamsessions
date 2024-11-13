@@ -3,6 +3,7 @@
 	import type { SessionPropertiesWithVenue } from '../types';
 	import TimeIcon from './icons/TimeIcon.svelte';
 	import FileTrayIcon from './icons/FileTrayIcon.svelte';
+	import { constructTimeString } from './timeUtils';
 
 	interface Props {
 		propertiesList: SessionPropertiesWithVenue[];
@@ -43,12 +44,8 @@
 						<table>
 							<tbody>
 								<tr
-									><td><TimeIcon title="Time of event" /></td><td>
-										{new Date(properties.start_time_utc).toLocaleTimeString()} -
-										{new Date(
-											new Date(properties.start_time_utc).getTime() +
-												properties.duration_minutes * 60000
-										).toLocaleTimeString()}</td
+									><td><TimeIcon title="Time of event" /></td><td
+										>{constructTimeString(properties)}</td
 									></tr
 								>
 								<tr

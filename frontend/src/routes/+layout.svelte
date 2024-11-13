@@ -3,58 +3,104 @@
 	import LoadingScreen from '$lib/LoadingScreen.svelte';
 	import Header from '$lib/Header.svelte';
 	import Map from '$lib/Map.svelte';
-	import { addSessionPopupVisible } from '../stores';
+	import { addSessionPopupVisible, activeTab, editingSession } from '../stores';
 	import AddSessionPopup from '$lib/AddSessionPopup.svelte';
+	import ViewSelect from '$lib/ViewSelect.svelte';
+	import SidePanel from '$lib/SidePanel.svelte';
+	import FilterMenu from '$lib/FilterMenu.svelte';
+
 	interface Props {
 		children?: import('svelte').Snippet;
 	}
 
 	let { children }: Props = $props();
+
+	let headerRelative = $derived($activeTab !== 'map');
+
+	let viewSelect: ViewSelect | undefined = $state();
 </script>
 
-<Header />
-<main>
-	{@render children?.()}
+<div id="app" class="flex-column">
 	<LoadingScreen />
-	<InfoPopup />
-	<div style="height: 100%;">
-		<Map />
-		<button
-			class="add-session-btn"
-			title="Add session to the database"
-			onclick={() => {
-				$addSessionPopupVisible = true;
-			}}>Session missing?</button
-		>
-	</div>
-	<AddSessionPopup />
-</main>
+	<FilterMenu />
+	<Header positionRelative={headerRelative} />
+	<main>
+		<InfoPopup />
+		<ViewSelect class="view-select-btns" bind:this={viewSelect} />
+		<div class="content-wrapper">
+			<Map
+				background={$activeTab !== 'map'}
+				onClickBackground={() => {
+					if (window.matchMedia('(max-width: 480px)').matches) $activeTab = 'map';
+				}}
+			/>
+
+			<SidePanel
+				background={$activeTab === 'map'}
+				hide={() => {
+					if ($activeTab === 'session') {
+						if ($editingSession) {
+							$editingSession = false;
+						} else window.location.assign('/');
+					} else if ($activeTab === 'list') {
+						$activeTab = 'map';
+					}
+				}}>{@render children?.()}</SidePanel
+			>
+		</div>
+		<AddSessionPopup />
+	</main>
+</div>
 
 <style>
-	main {
-		height: 100%;
-		width: 100%;
-		background-color: grey;
-		/* display: flex;
-      flex-direction: column; */
+	#app {
+		margin: 0;
+		display: flex;
+		height: 100vh;
+		width: 100vw;
 	}
 
-	.add-session-btn {
-		position: absolute;
-		bottom: 3em;
-		right: 2em;
+	.flex-column {
+		flex-direction: column;
+	}
+
+	.content-wrapper {
+		height: 100%;
 		display: flex;
-		align-items: center;
-		background-color: white;
-		border-radius: 24px;
-		border: 2px solid grey;
+		flex-direction: row;
+	}
+
+	:global(.content-wrapper > div) {
+		flex-grow: 1;
+		flex-shrink: 1;
 	}
 
 	@media (max-width: 480px) {
-		.add-session-btn {
-			bottom: 6em;
+		.flex-column {
+			flex-direction: column-reverse;
+		}
+	}
+
+	main {
+		flex-grow: 1;
+		min-height: 0;
+	}
+
+	:global(.view-select-btns) {
+		position: absolute;
+		bottom: 2em;
+		left: 2em;
+		z-index: 100;
+	}
+
+	@media (max-width: 480px) {
+		:global(.view-select-btns) {
+			position: absolute;
+			bottom: unset;
+			top: 1em;
+			left: 1em;
 			font-size: smaller;
-			right: 0.5em;
+			z-index: 100;
 		}
 	}
 

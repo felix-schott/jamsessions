@@ -1,4 +1,5 @@
 import type { Interval } from "../types";
+import type { SessionProperties } from "../types";
 
 // Helper func - given a Date object, returns the English common name for the day of the week.
 let getDow = (d: Date) =>
@@ -44,7 +45,6 @@ export const constructIntervalString = (interval: Interval, date: Date) => {
 export const minutesBetweenTimestamps = (time1: string, time2: string): number => {
     let d1 = new Date();
     const [h1, m1] = time1.split(":")
-    console.log(parseInt(h1), parseInt(m1))
     d1.setHours(parseInt(h1), parseInt(m1), 0, 0)
 
     let d2 = new Date();
@@ -55,3 +55,21 @@ export const minutesBetweenTimestamps = (time1: string, time2: string): number =
         (d2.getTime() - d1.getTime()) / 1000 / 60
     )
 }
+
+export const constructTimeString = (properties: SessionProperties) => {
+    // construct "when" string
+    const when =
+        new Date(properties.start_time_utc).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+        }) +
+        ' - ' +
+        new Date(
+            new Date(properties.start_time_utc).getTime() + properties!.duration_minutes * 60000
+        ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return (
+        when +
+        ', ' +
+        constructIntervalString(properties.interval, new Date(properties.start_time_utc))
+    );
+};
