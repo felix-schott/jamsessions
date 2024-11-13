@@ -8,6 +8,8 @@ import (
 	"golang.org/x/time/rate"
 )
 
+// most code taken from https://gist.github.com/MelchiSalins/27c11566184116ec1629a0726e0f9af5
+
 type httpClientWithRateLimit struct {
 	client      *http.Client
 	Ratelimiter *rate.Limiter
