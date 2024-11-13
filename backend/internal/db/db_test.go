@@ -261,6 +261,9 @@ func TestGetSessionsByDate(t *testing.T) {
 	if *j.Features[0].Properties.SessionID != fixtureSessionId2 {
 		t.Errorf("expected fixture 2 (%v), got %v", fixtureSessionId2, *j.Features[0].Properties.SessionID)
 	}
+	if j.Features[0].Properties.Dates == nil {
+		t.Error("dates property shouldn't be nil")
+	}
 }
 
 func TestGetSessionIdsByDateRange(t *testing.T) {
@@ -307,5 +310,8 @@ func TestGetSessionsByDateRange(t *testing.T) {
 	}
 	if *result.Features[0].Properties.SessionID != fixtureSessionId {
 		t.Errorf("expected returned session (%v) to match the inserted fixture (%v)", *result.Features[0].Properties.SessionID, fixtureSessionId)
+	}
+	if result.Features[0].Properties.Dates == nil {
+		t.Error("dates property shouldn't be nil")
 	}
 }

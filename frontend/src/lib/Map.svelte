@@ -5,7 +5,6 @@
 	import 'ol/ol.css';
 	import { Feature } from 'ol';
 	import { Map, View } from 'ol';
-	import Zoom from 'ol/control/Zoom';
 	import type Point from 'ol/geom/Point';
 	import Overlay from 'ol/Overlay';
 	import { fromLonLat, useGeographic } from 'ol/proj';
@@ -30,14 +29,18 @@
 	import { flyTo, sessionStyle } from './mapUtils';
 	import SessionPopup from './SessionPopup.svelte';
 	import Message from './Message.svelte';
+	import AddSessionButton from './AddSessionButton.svelte';
 
 	interface Props {
 		background: boolean;
+		onClickBackground?: () => void;
 	}
 
-	let { background }: Props = $props();
+	let { background, onClickBackground }: Props = $props();
 
 	type SessionsByVenue = { [key: number]: Feature[] };
+	let sessionsById: { [key: number]: Feature } = {};
+	let popupsById: { [key: number]: [Overlay, HTMLElement] } = {};
 
 	// initialise variables
 	let map: Map | undefined = $state(undefined);
@@ -63,6 +66,10 @@
 		source: venuesSource
 	});
 
+	let activePopup: Overlay | null;
+
+	let isMobile: boolean = $state(false);
+
 	// reactivity - whenever the stores change (and the condition evaluates to true, the respective render function is called)
 	$effect(() => {
 		if (map && $visibleLayer == MapLayer.SESSIONS && $selectedSessions !== null) renderSessions();
@@ -70,13 +77,13 @@
 
 	$effect(() => {
 		if (map) {
-			if (background) {
+			if (background && window.matchMedia('(max-width: 480px)').matches) {
 				// hide controls
 				document.querySelectorAll('.ol-control').forEach((elem) => {
 					(elem as HTMLElement).style.display = 'none';
 				});
 				// remove popups
-				map.getOverlays().forEach(o => map!.removeOverlay(o));
+				map.getOverlays().forEach((o) => map!.removeOverlay(o));
 			} else {
 				document.querySelectorAll('.ol-control').forEach((elem) => {
 					(elem as HTMLElement).style.display = 'unset';
@@ -112,10 +119,13 @@
 
 			let sessionsByVenue: SessionsByVenue = {};
 			for (let ft of features) {
-				if (!(ft.getProperties().venue_id in sessionsByVenue)) {
-					sessionsByVenue[ft.getProperties().venue_id] = [];
+				let p = ft.getProperties();
+				if (!(p.venue_id in sessionsByVenue)) {
+					sessionsByVenue[p.venue_id] = [];
 				}
 				sessionsByVenue[ft.getProperties().venue_id].push(ft);
+
+				sessionsById[p.session_id] = ft;
 			}
 			addPopups(sessionsByVenue);
 
@@ -146,46 +156,32 @@
 		}
 	};
 
-	/** Clears the map before rendering the $venues svelte store as an OpenLayers
-	 * GeoJSON layer on the map. Also calls `addPopup()` and zooms to the newly added features.
+	/** Display the popup belonging to a feature.
+	 *
+	 * @param feature - the Session Feature
+	 * @param popup - the Overlay object
+	 * @param elem - the target element of the Overlay object
 	 */
-	const renderVenues = () => {
-		// clear source before re-render
-		venuesSource.clear();
-		if (map) map.getOverlays().forEach((i) => map!.removeOverlay(i));
+	const showPopup = (feature: Feature, popup: Overlay, elem: HTMLElement) => {
+		if (activePopup !== popup) {
+			// remove existing popups
+			map!.getOverlays().forEach((i) => map!.removeOverlay(i));
 
-		// hide sessions on map - only one layer can be visible at a time
-		sessionsLayer.setVisible(false);
-
-		// add features
-		// if ($venues!.features && $venues!.features.length != 0) {
-		// 	const features = new GeoJSON().readFeatures($venues, {
-		// 		dataProjection: 'EPSG:4326',
-		// 		featureProjection: 'EPSG:3857'
-		// 	});
-		// 	venuesSource.addFeatures(features);
-		// 	for (let ft of features) {
-		// 		addPopup(ft);
-		// 	}
-
-		// 	venuesLayer.setVisible(true);
-
-		// 	if (view) {
-		// 		// if ($activeVenueId) {
-		// 		// 	view.fit(
-		// 		// 		features
-		// 		// 			.find((i) => i.getProperties().venue_id == $activeVenueId)
-		// 		// 			?.getGeometry()
-		// 		// 			?.getExtent()!
-		// 		// 	);
-		// 		// } else {
-		// 		view.fit(venuesSource.getExtent()!, {
-		// 			maxZoom: 13,
-		// 			duration: 1000
-		// 		});
-		// 		// }
-		// 	}
-		// }
+			// fly to the geometry and right zoom level first, then add the popup and center on that
+			// has to be this sequence, as the center of the popup will be different depending on zoom level
+			flyTo(view!, feature.getGeometry()?.getExtent()!, () => {
+				map!.addOverlay(popup); // show popup when feature is clicked
+				const rect = elem.getBoundingClientRect();
+				flyTo(
+					view!,
+					map!.getCoordinateFromPixel([
+						rect.right - (rect.right - rect.left) / 2,
+						rect.top - (rect.top - rect.bottom) / 2
+					])
+				);
+			});
+			activePopup = popup;
+		}
 	};
 
 	/**
@@ -197,8 +193,6 @@
 	 * */
 	const addPopups = (sessionsByVenue: SessionsByVenue): void => {
 		for (let [_, features] of Object.entries(sessionsByVenue)) {
-			// TODO one popup for multiple sessions, might have to change SessionPopup
-
 			const propertiesList = features.map((i) => i.getProperties());
 			const isSession = 'session_id' in propertiesList[0];
 
@@ -210,21 +204,13 @@
 				mount(SessionPopup, {
 					props: {
 						propertiesList: propertiesList as SessionPropertiesWithVenue[],
-						onclose: () => map!.removeOverlay(popup)
+						onclose: () => {
+							map!.removeOverlay(popup);
+							activePopup = null;
+						}
 					},
 					target: elem
 				});
-			} else {
-				// new VenuePopup({
-				// 	props: {
-				// 		// onClick: () => {
-				// 		//     console.log("venue popup clicked");
-				// 		// },
-				// 		// onClose: () => map.removeOverlay(popup),
-				// 		properties: properties as VenueProperties
-				// 	},
-				// 	target: elem
-				// });
 			}
 			document.getElementById('popups')!.appendChild(elem);
 
@@ -236,68 +222,27 @@
 				// autoPan: true,
 			});
 
-			// let options = {
-			//     root: document.querySelector(".ol-viewport"),
-			//     rootMargin: "0px",
-			//     threshold: 0.1,
-			// };
-
-			// //
-			// const movePopupOnScreen = (
-			//     entries: IntersectionObserverEntry[],
-			//     popup: Overlay,
-			// ) => {
-			//     console.log("yeah outside")
-			//     const rightIsOutside = entries[0].intersectionRect.left < entries[0].boundingClientRect.left;
-			//     const leftIsOutside = entries[0].intersectionRect.right < entries[0].boundingClientRect.right;
-			//     const topIsOutside = entries[0].intersectionRect.bottom < entries[0].boundingClientRect.bottom;
-			//     const bottomIsOutside = entries[0].intersectionRect.top < entries[0].boundingClientRect.top;
-
-			//     if (rightIsOutside) {
-			//         popup.setPositioning("center-left")
-			//     } else if (leftIsOutside) {
-			//         popup.setPositioning("center-right")
-			//     } else if (topIsOutside) {
-			//         popup.setPositioning("bottom-center")
-			//     } else if (bottomIsOutside) {
-			//         popup.setPositioning("top-center")
-			//     }
-			// };
-
-			// const observer = new IntersectionObserver(
-			//     (entries, _) => movePopupOnScreen(entries, popup),
-			//     options,
-			// );
-			// observer.observe(elem)
+			for (let p of propertiesList) {
+				popupsById[p.session_id] = [popup, elem];
+			}
 
 			if (map && view)
 				map.on('click', (ev) => {
 					map!.forEachFeatureAtPixel(ev.pixel, (feature, _) => {
-						// remove existing overlays
-						map!.getOverlays().forEach((i) => map!.removeOverlay(i));
 						// show popup
 						if (feature == features[0]) {
-							// fly to the geometry and right zoom level first, then add the popup and center on that
-							// has to be this sequence, as the center of the popup will be different depending on zoom level
-							flyTo(view!, feature.getGeometry()?.getExtent()!, () => {
-								map!.addOverlay(popup); // show popup when feature is clicked
-								const rect = elem.getBoundingClientRect();
-								flyTo(
-									view!,
-									map!.getCoordinateFromPixel([
-										rect.right - (rect.right - rect.left) / 2,
-										rect.top - (rect.top - rect.bottom) / 2
-									])
-								);
-							});
+							showPopup(feature, popup, elem);
 						}
 					});
 				});
 		}
 	};
 
+	const zoomToSession = (id: number) => showPopup(sessionsById[id], ...popupsById[id]);
+
 	// when mounting the component, initialise the map object
 	onMount(async () => {
+		isMobile = window.matchMedia('(max-width: 480px)').matches;
 		// useGeographic();
 
 		view = new View({
@@ -336,13 +281,28 @@
 	});
 </script>
 
-<div id="map" class:map-background={background} class:map-foreground={!background}></div>
-<div id="popups"></div>
+<div
+	id="map"
+	onzoom={() => zoomToSession(parseInt(window.sessionStorage.getItem('activeSessionId')!))}
+	class:map-background={background}
+	class:map-foreground={!background}
+>
+	{#if background}
+		<div id="map-background-blur" onclick={onClickBackground}></div>
+	{/if}
+	{#if !background || !isMobile}
+		{#await new Promise((resolve) => setTimeout(resolve, 1)) then}
+			<AddSessionButton />
+		{/await}
+	{/if}
+	<div id="popups"></div>
+</div>
 
 <style>
 	#map {
 		height: 100%;
 		transition: width ease-in-out 1s;
+		position: relative;
 	}
 
 	.map-foreground {
@@ -351,31 +311,58 @@
 	}
 
 	.map-background {
+		flex-shrink: 0;
 		width: 50%;
+	}
+
+	#map-background-blur {
+		position: absolute;
+		background: transparent;
+		height: 100%;
+		width: 100%;
+		z-index: 800000;
 		pointer-events: none;
+	}
+
+	:global(.ol-control button) {
+		height: 2em;
+		width: 2em;
+		font-size: large;
+	}
+
+	:global(.ol-zoom) {
+		bottom: 7em;
+		top: unset;
+		right: unset;
+		left: 2em;
+		border: 2px grey solid;
+		border-radius: 8px;
 	}
 
 	@media (max-width: 480px) {
 		.map-background {
 			width: 20%;
+			pointer-events: none;
 		}
-	}
 
-	#popups {
-		z-index: 500000;
-	}
+		#map-background-blur {
+			pointer-events: all;
+		}
 
-	:global(.ol-zoom) {
-		top: 8em;
-		/* bottom: 0.5em; */
-		left: 0.5em;
-	}
-	@media (max-width: 480px) {
 		:global(.ol-zoom) {
 			top: 1.5em;
 			right: 0.5em;
-			/* bottom: unset; */
+			bottom: unset;
 			left: unset;
+		}
+
+		:global(.ol-control button) {
+			height: 1.375em;
+			width: 1.375em;
+		}
+
+		:global(.ol-touch .ol-control button) {
+			font-size: 1.3em;
 		}
 
 		:global(.ol-attribution.ol-uncollapsible) {
@@ -386,5 +373,9 @@
 			border-top-left-radius: 0;
 			border-bottom-left-radius: 4px;
 		}
+	}
+
+	#popups {
+		z-index: 500000;
 	}
 </style>

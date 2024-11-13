@@ -6,7 +6,8 @@
 		selectedSessions,
 		filterMenuVisible,
 		visibleLayer,
-		infoVisible
+		infoVisible,
+		selectedDateRange
 	} from '../stores';
 	import { getSessions, type SessionOptions } from '../api';
 	import { MapLayer, type SessionFeatureCollection, Genre, Backline } from '../types';
@@ -14,14 +15,14 @@
 	import InfoIcon from '../lib/icons/InfoIcon.svelte';
 
 	interface Props {
-		positionRelative: boolean
+		positionRelative: boolean;
 	}
 
 	let { positionRelative }: Props = $props();
 
 	const today = new Date();
 	const todayString = today.toISOString().slice(0, 10);
-	let selectedDateStr: string = $state("");
+	let selectedDateStr: string = $state('');
 
 	const onDateChange = async () => {
 		$loading = true;
@@ -31,11 +32,16 @@
 				date: new Date(selectedDateStr),
 				backline: window.sessionStorage.getItem('selectedBackline')?.split(',') as Backline[],
 				genre: window.sessionStorage.getItem('selectedGenre') as Genre
-			}
-			if (window.sessionStorage.getItem('selectedTimeRange') && window.sessionStorage.getItem('selectedTimeRange') !== '0') {
+			};
+			if (
+				window.sessionStorage.getItem('selectedDateRange') &&
+				window.sessionStorage.getItem('selectedDateRange') !== '0'
+			) {
 				let endDate = new Date(selectedDateStr);
-				endDate!.setDate(endDate!.getDate() + parseInt(window.sessionStorage.getItem('selectedTimeRange')!))
-				params["endDate"] = endDate
+				endDate!.setDate(
+					endDate!.getDate() + parseInt(window.sessionStorage.getItem('selectedDateRange')!)
+				);
+				params['endDate'] = endDate;
 			}
 			$selectedSessions = await getSessions(params);
 		} catch (e) {
@@ -48,11 +54,12 @@
 	};
 
 	onMount(async () => {
-		let storedDateStr = window.sessionStorage.getItem("selectedDateStr");
+		// retrieve data from session storage
+		let storedDateStr = window.sessionStorage.getItem('selectedDateStr');
 		if (storedDateStr === null) {
 			selectedDateStr = todayString;
 		} else {
-			selectedDateStr = storedDateStr
+			selectedDateStr = storedDateStr;
 		}
 		onDateChange();
 	});
@@ -67,7 +74,7 @@
 		}}
 	>
 		<b>Jam Sessions</b>
-in <b>London</b><InfoIcon
+		in <b>London</b><InfoIcon
 			style="margin-left: 0.2em; cursor: pointer;"
 			colour="whitesmoke"
 			title="About this website"
@@ -84,6 +91,9 @@ in <b>London</b><InfoIcon
 			}}
 		/>
 		<input type="date" min={todayString} bind:value={selectedDateStr} onchange={onDateChange} />
+		{#if $selectedDateRange > 0}
+			<span style="margin-left: 0.5em;">+{$selectedDateRange}</span>
+		{/if}
 	</div>
 </div>
 
@@ -101,7 +111,8 @@ in <b>London</b><InfoIcon
 		/* height: 8%;
 		max-height: 5em; */
 		padding: 1em 1.5em;
-		background: rgba(0, 0, 0, 0.4);
+		background-color: rgba(0, 0, 0, 0.4);
+		transition: background-color ease-in-out 1s;
 		padding: 1em;
 		color: whitesmoke;
 		justify-content: space-between;
@@ -110,6 +121,7 @@ in <b>London</b><InfoIcon
 
 	.relative {
 		position: relative;
+		background-color: rgba(0, 0, 0, 0.6);
 	}
 
 	@media (max-width: 480px) {
@@ -117,12 +129,11 @@ in <b>London</b><InfoIcon
 			padding: 0.1em 0.2em;
 			font-weight: 400;
 			margin-left: 0.5em;
-			width: 8.5em;
+			width: 7em;
 		}
 
 		.top-bar {
 			font-size: 1em;
-			max-height: 6rem;
 			top: unset;
 			bottom: 0;
 			padding: 0.7em;

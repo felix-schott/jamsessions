@@ -201,12 +201,14 @@ func GetSessions(c *fuego.ContextNoBody) (types.SessionWithVenueFeatureCollectio
 	if startDate == nil && backline == nil && genre == nil { // no params used, no filter
 		result, err = queries.GetAllSessionsAsGeoJSON(ctx)
 	} else if startDate != nil && endDate == nil && backline != nil && genre != nil { // all available query params are used (single day)
+		slog.Info("GetSessions", "query", "GetSessionsByDateAndGenreAndBacklineAsGeoJSON")
 		result, err = queries.GetSessionsByDateAndGenreAndBacklineAsGeoJSON(ctx, dbutils.GetSessionsByDateAndGenreAndBacklineAsGeoJSONParams{
 			Genres:   []string{*genre},
 			Backline: *backline,
 			Date:     pgtype.Date{Time: *startDate, Valid: true},
 		})
 	} else if startDate != nil && endDate != nil && backline != nil && genre != nil { // all available query params are used (date range)
+		slog.Info("GetSessions", "query", "GetSessionsByDateRangeAndGenreAndBacklineAsGeoJSON")
 		result, err = queries.GetSessionsByDateRangeAndGenreAndBacklineAsGeoJSON(ctx, dbutils.GetSessionsByDateRangeAndGenreAndBacklineAsGeoJSONParams{
 			Genres:    []string{*genre},
 			Backline:  *backline,
@@ -214,42 +216,51 @@ func GetSessions(c *fuego.ContextNoBody) (types.SessionWithVenueFeatureCollectio
 			EndDate:   pgtype.Date{Time: *endDate, Valid: true},
 		})
 	} else if startDate != nil && endDate == nil && backline != nil && genre == nil { // single date and backline are used
+		slog.Info("GetSessions", "query", "GetSessionsByDateAndBacklineAsGeoJSON")
 		result, err = queries.GetSessionsByDateAndBacklineAsGeoJSON(ctx, dbutils.GetSessionsByDateAndBacklineAsGeoJSONParams{
 			Date:     pgtype.Date{Time: *startDate, Valid: true},
 			Backline: *backline,
 		})
 	} else if startDate != nil && endDate != nil && backline != nil && genre == nil { // date range and backline are used
+		slog.Info("GetSessions", "query", "GetSessionsByDateRangeAndBacklineAsGeoJSON")
 		result, err = queries.GetSessionsByDateRangeAndBacklineAsGeoJSON(ctx, dbutils.GetSessionsByDateRangeAndBacklineAsGeoJSONParams{
 			StartDate: pgtype.Date{Time: *startDate, Valid: true},
 			EndDate:   pgtype.Date{Time: *endDate, Valid: true},
 			Backline:  *backline,
 		})
 	} else if startDate != nil && endDate == nil && genre != nil && backline == nil { // single date and genre are used
+		slog.Info("GetSessions", "query", "GetSessionsByDateAndGenreAsGeoJSON")
 		result, err = queries.GetSessionsByDateAndGenreAsGeoJSON(ctx, dbutils.GetSessionsByDateAndGenreAsGeoJSONParams{
 			Date:   pgtype.Date{Time: *startDate, Valid: true},
 			Genres: []string{*genre},
 		})
 	} else if startDate != nil && endDate != nil && genre != nil && backline == nil { // date range and genre are used
+		slog.Info("GetSessions", "query", "GetSessionsByDateRangeAndGenreAsGeoJSON")
 		result, err = queries.GetSessionsByDateRangeAndGenreAsGeoJSON(ctx, dbutils.GetSessionsByDateRangeAndGenreAsGeoJSONParams{
 			StartDate: pgtype.Date{Time: *startDate, Valid: true},
 			EndDate:   pgtype.Date{Time: *endDate, Valid: true},
 			Genres:    []string{*genre},
 		})
 	} else if genre != nil && backline != nil && startDate == nil { // genre and backline are used
+		slog.Info("GetSessions", "query", "GetSessionsByGenreAndBacklineAsGeoJSON")
 		result, err = queries.GetSessionsByGenreAndBacklineAsGeoJSON(ctx, dbutils.GetSessionsByGenreAndBacklineAsGeoJSONParams{
 			Genres:   []string{*genre},
 			Backline: *backline,
 		})
 	} else if startDate != nil && endDate == nil {
+		slog.Info("GetSessions", "query", "GetSessionsByDateAsGeoJSON")
 		result, err = queries.GetSessionsByDateAsGeoJSON(ctx, pgtype.Date{Time: *startDate, Valid: true})
 	} else if startDate != nil && endDate != nil {
+		slog.Info("GetSessions", "query", "GetSessionsByDateRangeAsGeoJSON")
 		result, err = queries.GetSessionsByDateRangeAsGeoJSON(ctx, dbutils.GetSessionsByDateRangeAsGeoJSONParams{
 			StartDate: pgtype.Date{Time: *startDate, Valid: true},
 			EndDate:   pgtype.Date{Time: *endDate, Valid: true},
 		})
 	} else if backline != nil {
+		slog.Info("GetSessions", "query", "GetSessionsByBacklineAsGeoJSON")
 		result, err = queries.GetSessionsByBacklineAsGeoJSON(ctx, *backline)
 	} else { // genre
+		slog.Info("GetSessions", "query", "GetSessionsByGenreAsGeoJSON")
 		result, err = queries.GetSessionsByGenreAsGeoJSON(ctx, []string{*genre})
 	}
 	if err != nil {

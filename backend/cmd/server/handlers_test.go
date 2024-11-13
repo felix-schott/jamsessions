@@ -54,7 +54,7 @@ func checkResultSetForSessionIds(t *testing.T, sessionIds []int32, body types.Se
 
 func TestHandlers(t *testing.T) {
 
-	slog.SetLogLoggerLevel(slog.LevelInfo) // change this to see more log informations
+	slog.SetLogLoggerLevel(slog.LevelError) // change this to see more log informations
 
 	// setup database connection
 	pool, err := dbutils.CreatePool(ctx)
@@ -247,6 +247,10 @@ func TestHandlers(t *testing.T) {
 		}
 		if len(body.Features) == 0 {
 			t.Errorf("expected at least 1 feature in the session feature collection")
+			t.FailNow()
+		}
+		if body.Features[0].Properties.Dates == nil {
+			t.Error("dates property shouldn't be nil")
 		}
 		checkResultSetForSessionIds(t, []int32{testSession1Id}, body)
 	})
@@ -269,6 +273,10 @@ func TestHandlers(t *testing.T) {
 		}
 		if len(body.Features) < 2 {
 			t.Errorf("expected at least 2 feature in the session feature collection")
+			t.FailNow()
+		}
+		if body.Features[0].Properties.Dates == nil {
+			t.Error("dates property shouldn't be nil")
 		}
 		checkResultSetForSessionIds(t, []int32{testSession1Id, testSession2Id}, body)
 	})

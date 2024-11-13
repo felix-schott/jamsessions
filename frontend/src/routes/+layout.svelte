@@ -3,11 +3,11 @@
 	import LoadingScreen from '$lib/LoadingScreen.svelte';
 	import Header from '$lib/Header.svelte';
 	import Map from '$lib/Map.svelte';
-	import { addSessionPopupVisible } from '../stores';
+	import { addSessionPopupVisible, activeTab, editingSession } from '../stores';
 	import AddSessionPopup from '$lib/AddSessionPopup.svelte';
 	import ViewSelect from '$lib/ViewSelect.svelte';
-	import ListView from '$lib/ListView.svelte';
-	import type { TabOptions } from '../types';
+	import SidePanel from '$lib/SidePanel.svelte';
+	import FilterMenu from '$lib/FilterMenu.svelte';
 
 	interface Props {
 		children?: import('svelte').Snippet;
@@ -15,29 +15,38 @@
 
 	let { children }: Props = $props();
 
-	let activeTab: TabOptions = $state('map');
-	let headerRelative = $derived(activeTab !== 'map');
+	let headerRelative = $derived($activeTab !== 'map');
+
+	let viewSelect: ViewSelect | undefined = $state();
 </script>
 
 <div id="app" class="flex-column">
 	<LoadingScreen />
+	<FilterMenu />
 	<Header positionRelative={headerRelative} />
 	<main>
-		{@render children?.()}
 		<InfoPopup />
-		<ViewSelect class="view-select-btns" bind:activeTab />
-		<div style="height: 100%; display: flex; flex-direction: row;">
-			<Map background={activeTab !== 'map'} />
-			<button
-				class="add-session-btn"
-				title="Add session to the database"
-				onclick={() => {
-					$addSessionPopupVisible = true;
-				}}>Session missing?</button
+		<ViewSelect class="view-select-btns" bind:this={viewSelect} />
+		<div class="content-wrapper">
+			<Map
+				background={$activeTab !== 'map'}
+				onClickBackground={() => {
+					if (window.matchMedia('(max-width: 480px)').matches) $activeTab = 'map';
+				}}
+			/>
+
+			<SidePanel
+				background={$activeTab === 'map'}
+				hide={() => {
+					if ($activeTab === 'session') {
+						if ($editingSession) {
+							$editingSession = false;
+						} else window.location.assign('/');
+					} else if ($activeTab === 'list') {
+						$activeTab = 'map';
+					}
+				}}>{@render children?.()}</SidePanel
 			>
-			{#if activeTab === 'list'}
-				<ListView />
-			{/if}
 		</div>
 		<AddSessionPopup />
 	</main>
@@ -53,6 +62,17 @@
 
 	.flex-column {
 		flex-direction: column;
+	}
+
+	.content-wrapper {
+		height: 100%;
+		display: flex;
+		flex-direction: row;
+	}
+
+	:global(.content-wrapper > div) {
+		flex-grow: 1;
+		flex-shrink: 1;
 	}
 
 	@media (max-width: 480px) {
@@ -73,24 +93,7 @@
 		z-index: 100;
 	}
 
-	.add-session-btn {
-		position: absolute;
-		bottom: 3em;
-		right: 2em;
-		display: flex;
-		align-items: center;
-		background-color: white;
-		border-radius: 24px;
-		border: 2px solid grey;
-	}
-
 	@media (max-width: 480px) {
-		.add-session-btn {
-			bottom: 6em;
-			font-size: smaller;
-			right: 0.5em;
-		}
-
 		:global(.view-select-btns) {
 			position: absolute;
 			bottom: unset;

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import FilterMenu from "$lib/FilterMenu.svelte";
+	import SessionList from '$lib/SessionList.svelte';
 </script>
 
-<FilterMenu />
+<SessionList />
