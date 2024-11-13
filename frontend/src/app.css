@@ -89,6 +89,7 @@ select::after {
   border-radius: 4px;
   font-size: larger;
   width: 10em;
+  font-family: inherit;
 }
 
 .hidden {
