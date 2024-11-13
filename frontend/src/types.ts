@@ -30,6 +30,7 @@ export enum Genre {
 	BLUES = 'Blues',
 	FOLK = 'Folk',
 	ROCK = 'Rock',
+	POP = 'Pop',
 	WORLD_MUSIC = 'World_Music',
 }
 
@@ -41,7 +42,8 @@ export enum Interval {
 	SECONDOFMONTH = 'SecondOfMonth',
 	THIRDOFMONTH = 'ThirdOfMonth',
 	FOURTHOFMONTH = 'FourthOfMonth',
-	LASTOFMONTH = 'LastOfMonth'
+	LASTOFMONTH = 'LastOfMonth',
+	IRREGULARWEEKLY = 'IrregularWeekly'
 }
 
 export interface VenueProperties {

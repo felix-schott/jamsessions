@@ -7,6 +7,12 @@ and this project adheres to [Calendar Versioning](https://calver.org/) (`YYYY.MM
 
 ## [v2024.11.0-beta] - 2024-11-13
 
+## Added
+
+- Added list view alongside map view (PR [#56](https://github.com/felix-schott/jamsessions/pull/56))
+- Added date range filter to API (PR [#53](https://github.com/felix-schott/jamsessions/pull/53), [#55](https://github.com/felix-schott/jamsessions/pull/55))
+- Added support for irregular sessions (PR [#57](https://github.com/felix-schott/jamsessions/pull/57))
+
 ## [v2024.10.4-beta] - 2024-10-30
 
 ### Fixed

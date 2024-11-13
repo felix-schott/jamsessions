@@ -32,6 +32,9 @@ export const constructIntervalString = (interval: Interval, date: Date) => {
         case 'LastOfMonth':
             i = 'every last ' + getDow(date) + ' of the month';
             break;
+        case 'IrregularWeekly':
+            i = '<span style="color: firebrick;">irregularly</span> on ' + getDow(date) + 's'
+            break;
         default:
             throw "Unexpected value for property 'interval': " + interval;
     }
@@ -56,8 +59,8 @@ export const minutesBetweenTimestamps = (time1: string, time2: string): number =
     )
 }
 
-export const constructTimeString = (properties: SessionProperties) => {
-    // construct "when" string
+export const constructTimeString = (properties: SessionProperties): string => {
+    // // construct "when" string
     const when =
         new Date(properties.start_time_utc).toLocaleTimeString([], {
             hour: '2-digit',

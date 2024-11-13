@@ -1,6 +1,11 @@
 <script lang="ts">
 	import Modal from './Modal.svelte';
-	import type { SessionComment, SessionProperties, VenueProperties } from '../types';
+	import {
+		Interval,
+		type SessionComment,
+		type SessionProperties,
+		type VenueProperties
+	} from '../types';
 	import LocationIcon from './icons/LocationIcon.svelte';
 	import ShareIcon from './icons/ShareIcon.svelte';
 	import TimeIcon from './icons/TimeIcon.svelte';
@@ -108,7 +113,7 @@
 			</tr>
 			<tr>
 				<td><TimeIcon title="Time of event" class="icon-auto" /></td>
-				<td>{constructTimeString(sessionProperties)}</td>
+				<td>{@html constructTimeString(sessionProperties)}</td>
 			</tr>
 			{#if sessionProperties.genres && sessionProperties.genres.length !== 0}
 				<tr>
@@ -137,10 +142,14 @@
 	<p
 		style="border-radius: 6px; padding: 0.5em; background-color: var(--accent-color); margin-bottom: 2em;"
 	>
-		The data may be inaccurate or outdated, and sessions can be cancelled at short notice. Please
-		always check the <a target="_blank" href={sessionProperties?.session_website}
-			>website of the organiser</a
-		>.
+		{#if sessionProperties?.interval === Interval.IRREGULARWEEKLY}
+			IMPORTANT: This session doesn't operate on a regular schedule! If it takes place, it normally
+			happens on this weekday but there is no guarantee for that.
+		{:else}
+			The data may be inaccurate or outdated, and sessions can be cancelled at short notice.
+		{/if}
+		Please always check the
+		<a target="_blank" href={sessionProperties?.session_website}>website of the organiser</a>.
 	</p>
 	<hr />
 	<div style="display: flex; align-items: center; margin-top: 0.3em;">
