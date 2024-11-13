@@ -10,6 +10,7 @@ require (
 	github.com/rs/cors v1.11.1
 	github.com/twpayne/go-geom v1.5.7
 	github.com/twpayne/pgx-geom v0.0.2
+	golang.org/x/time v0.8.0
 )
 
 require (
