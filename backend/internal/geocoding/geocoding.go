@@ -9,7 +9,10 @@ import (
 	"time"
 
 	geom "github.com/twpayne/go-geom"
+	"golang.org/x/time/rate"
 )
+
+var client *httpClientWithRateLimit
 
 type geometry struct {
 	Type        string
@@ -27,14 +30,6 @@ type nominatimResponse struct {
 	Features []feature
 }
 
-var tr = &http.Transport{
-	IdleConnTimeout: 30 * time.Second,
-}
-var client = &http.Client{Transport: tr}
-
-// nominatim
-// 1 request per second!!
-
 type NominatimDownError struct {
 	StatusCode int
 	Body       []byte
@@ -47,7 +42,11 @@ func (r NominatimDownError) Error() string {
 
 // Returns a NominatimDownError if the service is not healthy, otherwise nil
 func serviceIsHealthy() error {
-	resp, err := client.Get("https://nominatim.openstreetmap.org/status")
+	req, err := http.NewRequest("GET", "https://nominatim.openstreetmap.org/status", nil)
+	if err != nil {
+		return err
+	}
+	resp, err := client.Do(req)
 	var b []byte
 	if err != nil {
 		b, err = io.ReadAll(resp.Body)
@@ -67,13 +66,23 @@ func serviceIsHealthy() error {
 }
 
 func Geocode(street string, city string, postcode string) (*geom.Point, error) {
+	// instantiate client that respects nominatim rate limit (max 1 request per second)
+	if client == nil {
+		rl := rate.NewLimiter(rate.Every(time.Second*1), 1)
+		client = NewHttpClient(rl, "github.com/felix-schott/jamsessions")
+	}
+
 	err := serviceIsHealthy()
 	if err != nil {
 		return nil, err
 	}
 
 	reqUrl := fmt.Sprintf("https://nominatim.openstreetmap.org/search?street=%v&city=%v&country=UK&postcode=%v&format=geojson&limit=1", url.QueryEscape(street), url.QueryEscape(city), url.QueryEscape(postcode))
-	resp, err2 := client.Get(reqUrl)
+	req, err := http.NewRequest("GET", reqUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err2 := client.Do(req)
 	if err2 != nil {
 		return nil, fmt.Errorf("an unkown error occured when making request to %v: %v", reqUrl, err2)
 	}
@@ -92,5 +101,6 @@ func Geocode(street string, city string, postcode string) (*geom.Point, error) {
 	if len(result.Features) == 0 {
 		return nil, fmt.Errorf("no matches for %v, %v, %v (url %v)", street, city, postcode, reqUrl)
 	}
+
 	return geom.NewPoint(geom.XY).MustSetCoords(result.Features[0].Geometry.Coordinates).SetSRID(4326), nil
 }
