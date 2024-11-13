@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Calendar Versioning](https://calver.org/) (`YYYY.MM.MICRO-TAG`).
 
+## [v2024.11.1-beta] - 2024-11-13
+
+## Fixed
+
+- Fixed bug in AddSessionPopup - time component of the start datetime was being ignored (PR [#62](https://github.com/felix-schott/jamsessions/pull/62))
+
 ## [v2024.11.0-beta] - 2024-11-13
 
 ## Added

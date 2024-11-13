@@ -9,9 +9,7 @@
 		Interval,
 		type SessionProperties,
 		type VenueProperties,
-
 		type VenuesFeatureCollection
-
 	} from '../types';
 	import InfoIcon from './icons/InfoIcon.svelte';
 	import { constructIntervalString, minutesBetweenTimestamps } from './timeUtils';
@@ -89,11 +87,17 @@
 		}
 		// add session (with venue if applicable)
 		try {
+			let d = new Date(sessionDate);
 			let sessionParams: SessionProperties = {
 				session_name: sessionName,
 				description: sessionDescription,
 				interval: sessionInterval!,
-				start_time_utc: new Date(sessionDate).toISOString(),
+				start_time_utc: new Date(
+					d.getFullYear(),
+					d.getMonth(),
+					d.getDate(),
+					...sessionTimeStart.split(':').map((i) => parseInt(i))
+				).toISOString(),
 				duration_minutes: minutesBetweenTimestamps(sessionTimeStart, sessionTimeFinish),
 				genres: Array.from(document.querySelectorAll('.genre-checkbox:checked')).map(
 					(i) => i.id.replace('session-genre-', '') as Genre
