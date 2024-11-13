@@ -63,13 +63,14 @@ export const constructTimeString = (properties: SessionProperties): string => {
     // // construct "when" string
     const when =
         new Date(properties.start_time_utc).toLocaleTimeString([], {
+            timeZone: 'Europe/London',
             hour: '2-digit',
             minute: '2-digit'
         }) +
         ' - ' +
         new Date(
             new Date(properties.start_time_utc).getTime() + properties!.duration_minutes * 60000
-        ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        ).toLocaleTimeString([], { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' });
     return (
         when +
         ', ' +
