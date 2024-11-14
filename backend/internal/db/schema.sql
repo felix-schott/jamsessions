@@ -44,7 +44,7 @@ CREATE TABLE london_jam_sessions.jamsessions (
     venue INTEGER NOT NULL REFERENCES london_jam_sessions.venues(venue_id) ON DELETE CASCADE, -- if a venue is deleted, all sessions associated with the venue should be deleted too
     genres VARCHAR(50)[] CHECK(genres <@ ARRAY['Straight-Ahead_Jazz'::VARCHAR, 'Modern_Jazz'::VARCHAR, 'Trad_Jazz'::VARCHAR, 'Jazz-Funk'::VARCHAR, 'Fusion'::VARCHAR, 'Latin_Jazz'::VARCHAR, 'Funk'::VARCHAR, 'Blues'::VARCHAR, 'Folk'::VARCHAR, 'Rock'::VARCHAR, 'Pop'::VARCHAR, 'World_Music'::VARCHAR]),
     start_time_utc TIMESTAMPTZ NOT NULL,
-    interval VARCHAR(50) NOT NULL CHECK (interval IN ('Once', 'Daily', 'Weekly', 'FirstOfMonth', 'SecondOfMonth', 'ThirdOfMonth', 'FourthOfMonth', 'LastOfMonth', 'IrregularWeekly')),
+    interval VARCHAR(50) NOT NULL CHECK (interval IN ('Once', 'Daily', 'Weekly', 'Fortnightly', 'FirstOfMonth', 'SecondOfMonth', 'ThirdOfMonth', 'FourthOfMonth', 'LastOfMonth', 'IrregularWeekly')),
     duration_minutes SMALLINT NOT NULL,
     description TEXT NOT NULL,
 	session_website VARCHAR(2000),
@@ -103,18 +103,23 @@ AS $$
             s.interval = 'Fortnightly' AND (dates_in_range.d::date - s.start_time_utc::date) % 14 = 0 
         )
         OR (
-            s.interval = 'FirstOfMonth' AND CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 1
+            s.interval = 'FirstOfMonth' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM d::date)
+            AND CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 1
         )
         OR (
-            s.interval = 'SecondOfMonth' AND CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 2
+            s.interval = 'SecondOfMonth' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM d::date)
+            AND CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 2
         )
         OR (
-            s.interval = 'ThirdOfMonth' AND CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 3
+            s.interval = 'ThirdOfMonth' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM d::date)
+            AND CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 3
         )
         OR (
-            s.interval = 'FourthOfMonth' AND CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 4
+            s.interval = 'FourthOfMonth' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM d::date)
+            AND CEIL (EXTRACT(DAY FROM dates_in_range.d) / 7) = 4
         )
-        OR s.interval = 'LastOfMonth' AND EXTRACT(MONTH FROM (dates_in_range.d + interval '7 day')) != EXTRACT(MONTH FROM dates_in_range.d)
+        OR s.interval = 'LastOfMonth' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM d::date)
+        AND EXTRACT(MONTH FROM (dates_in_range.d + interval '7 day')) != EXTRACT(MONTH FROM dates_in_range.d)
         GROUP BY s.session_id;
     END;
 $$ LANGUAGE plpgsql;
@@ -125,39 +130,50 @@ AS $$
     BEGIN
         RETURN QUERY
         SELECT s.session_id, ARRAY[d] FROM london_jam_sessions.jamsessions s
-        WHERE s.interval = 'Daily' AND s.start_time_utc::date <= d
+        WHERE s.start_time_utc::date <= d -- make sure we don't match any future sessions
+        AND (
+            s.interval = 'Daily' AND s.start_time_utc::date <= d
+        )
         OR (
             s.start_time_utc::date = d::date
             AND s.interval = 'Once'
         ) 
         OR (
             s.interval IN ('Weekly', 'IrregularWeekly') AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM d::date)
+            
         ) 
         OR (
             s.interval = 'Fortnightly' AND (d::date - s.start_time_utc::date) % 14 = 0 -- check if the number of days between is divisible by 14
         )
         OR (
-            s.interval = 'FirstOfMonth' AND CEIL (
+            s.interval = 'FirstOfMonth' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM d::date) 
+            AND CEIL (
                 EXTRACT(DAY FROM d) / 7
             ) = 1
         )
         OR (
-            s.interval = 'SecondOfMonth' AND CEIL (
+            s.interval = 'SecondOfMonth' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM d::date)
+            AND CEIL (
                 EXTRACT(DAY FROM d) / 7
             ) = 2
         )
         OR (
-            s.interval = 'ThirdOfMonth' AND CEIL (
+            s.interval = 'ThirdOfMonth' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM d::date) 
+            AND CEIL (
                 EXTRACT(DAY FROM d) / 7
             ) = 3
         )
         OR (
-            s.interval = 'FourthOfMonth' AND CEIL (
+            s.interval = 'FourthOfMonth' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM d::date) 
+            AND CEIL (
                 EXTRACT(DAY FROM d) / 7
             ) = 4
         )
-        OR s.interval = 'LastOfMonth' AND (
-            EXTRACT(MONTH FROM (d::date + interval '7 day')) != EXTRACT(MONTH FROM d) 
+        OR (
+            s.interval = 'LastOfMonth' AND EXTRACT(dow FROM s.start_time_utc) = EXTRACT(dow FROM d::date) 
+            AND (
+                EXTRACT(MONTH FROM (d::date + interval '7 day')) != EXTRACT(MONTH FROM d) 
+            )
         );
     END;
 $$ LANGUAGE plpgsql;

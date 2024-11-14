@@ -68,7 +68,7 @@ func main() {
 				log.Println("Obtaining coordinates from address")
 				var s string
 				if payload.AddressSecondLine != nil {
-					s = *payload.AddressFirstLine + *payload.AddressSecondLine
+					s = *payload.AddressFirstLine + "+" + *payload.AddressSecondLine
 				} else {
 					s = *payload.AddressFirstLine
 				}

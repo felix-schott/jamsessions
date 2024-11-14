@@ -7,19 +7,19 @@ and this project adheres to [Calendar Versioning](https://calver.org/) (`YYYY.MM
 
 ## [v2024.11.2-beta] - 2024-11-13
 
-## Added
+### Added
 
 - Added rate limiter to geocoding module (PR [#66](https://github.com/felix-schott/jamsessions/pull/66))
 
 ## [v2024.11.1-beta] - 2024-11-13
 
-## Fixed
+### Fixed
 
 - Fixed bug in AddSessionPopup - time component of the start datetime was being ignored (PR [#62](https://github.com/felix-schott/jamsessions/pull/62))
 
 ## [v2024.11.0-beta] - 2024-11-13
 
-## Added
+### Added
 
 - Added list view alongside map view (PR [#56](https://github.com/felix-schott/jamsessions/pull/56))
 - Added date range filter to API (PR [#53](https://github.com/felix-schott/jamsessions/pull/53), [#55](https://github.com/felix-schott/jamsessions/pull/55))
