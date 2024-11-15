@@ -38,6 +38,7 @@ export enum Interval {
 	ONCE = 'Once',
 	DAILY = 'Daily',
 	WEEKLY = 'Weekly',
+	FORTNIGHTLY = 'Fortnightly',
 	FIRSTOFMONTH = 'FirstOfMonth',
 	SECONDOFMONTH = 'SecondOfMonth',
 	THIRDOFMONTH = 'ThirdOfMonth',

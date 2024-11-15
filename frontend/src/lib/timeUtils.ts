@@ -1,4 +1,4 @@
-import type { Interval } from "../types";
+import { Interval } from "../types";
 import type { SessionProperties } from "../types";
 
 // Helper func - given a Date object, returns the English common name for the day of the week.
@@ -8,31 +8,34 @@ let getDow = (d: Date) =>
 export const constructIntervalString = (interval: Interval, date: Date) => {
     let i: string;
     switch (interval) {
-        case 'Once':
+        case Interval.ONCE:
             i = 'as a one-off event';
             break;
-        case 'Daily':
+        case Interval.DAILY:
             i = 'everyday';
             break;
-        case 'Weekly':
+        case Interval.WEEKLY:
             i = `every week (${getDow(date)})`;
             break;
-        case 'FirstOfMonth':
+        case Interval.FORTNIGHTLY:
+            i = `every other week (${getDow(date)})`
+            break;
+        case Interval.FIRSTOFMONTH:
             i = 'every first ' + getDow(date) + ' of the month';
             break;
-        case 'SecondOfMonth':
+        case Interval.SECONDOFMONTH:
             i = 'every second ' + getDow(date) + ' of the month';
             break;
-        case 'ThirdOfMonth':
+        case Interval.THIRDOFMONTH:
             i = 'every third ' + getDow(date) + ' of the month';
             break;
-        case 'FourthOfMonth':
+        case Interval.FOURTHOFMONTH:
             i = 'every fourth ' + getDow(date) + ' of the month';
             break;
-        case 'LastOfMonth':
+        case Interval.LASTOFMONTH:
             i = 'every last ' + getDow(date) + ' of the month';
             break;
-        case 'IrregularWeekly':
+        case Interval.IRREGULARWEEKLY:
             i = '<span style="color: firebrick;">irregularly</span> on ' + getDow(date) + 's'
             break;
         default:
