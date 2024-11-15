@@ -252,17 +252,19 @@
 							>
 							<div>How often does the session happen?</div>
 							<select title="Select interval" bind:value={sessionInterval}>
-								{#each Object.values(Interval) as interval, idx}
-									{#if idx === 0}
-										<option value={interval} selected
-											>{constructIntervalString(interval, new Date(sessionDate))}</option
-										>
-									{:else}
-										<option value={interval}
-											>{constructIntervalString(interval, new Date(sessionDate))}</option
-										>
-									{/if}
-								{/each}
+								{#if sessionDate !== ''}
+									{#each Object.values(Interval) as interval, idx}
+										{#if idx === 0}
+											<option value={interval} selected
+												>{@html constructIntervalString(interval, new Date(sessionDate))}</option
+											>
+										{:else}
+											<option value={interval}
+												>{@html constructIntervalString(interval, new Date(sessionDate))}</option
+											>
+										{/if}
+									{/each}
+								{/if}
 							</select>
 						</div>
 						<label for="description" class="inline"
