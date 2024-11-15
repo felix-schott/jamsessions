@@ -8,6 +8,7 @@
 		Genre,
 		Interval,
 		type SessionProperties,
+		type SessionPropertiesWithVenue,
 		type VenueProperties,
 		type VenuesFeatureCollection
 	} from '../types';
@@ -31,8 +32,6 @@
 	let venuePostcode: string = $state('');
 	let venueWebsite: string = $state('');
 
-	let venueParams: VenueProperties;
-
 	let venuesLoaded: boolean = $state(false);
 
 	let newVenueHidden = $derived(venueId != 'new-venue' && venuesLoaded);
@@ -55,6 +54,23 @@
 	const onSubmit = async (ev: MouseEvent) => {
 		ev.preventDefault();
 
+		let d = new Date(sessionDate);
+		let sessionParams: SessionProperties | SessionPropertiesWithVenue = {
+			session_name: sessionName,
+			description: sessionDescription,
+			interval: sessionInterval!,
+			start_time_utc: new Date(
+				d.getFullYear(),
+				d.getMonth(),
+				d.getDate(),
+				...sessionTimeStart.split(':').map((i) => parseInt(i))
+			).toISOString(),
+			duration_minutes: minutesBetweenTimestamps(sessionTimeStart, sessionTimeFinish),
+			genres: Array.from(document.querySelectorAll('.genre-checkbox:checked')).map(
+				(i) => i.id.replace('session-genre-', '') as Genre
+			),
+			session_website: sessionWebsite
+		};
 		// add venue if necessary
 		if (venueId == 'new-venue') {
 			if (venueName === '') {
@@ -73,7 +89,7 @@
 			if (venueWebsite === '') {
 				alert('Please add the website of the venue');
 			}
-			venueParams = {
+			let venueParams: VenueProperties = {
 				venue_name: venueName,
 				address_first_line: venueAddress1,
 				address_second_line: venueAddress2 ? venueAddress2 : undefined,
@@ -84,29 +100,11 @@
 					(i) => i.id.replace('venue-backline-', '') as Backline
 				)
 			};
+			Object.assign(sessionParams, venueParams);
+		} else {
+			sessionParams['venue'] = parseInt(venueId);
 		}
-		// add session (with venue if applicable)
 		try {
-			let d = new Date(sessionDate);
-			let sessionParams: SessionProperties = {
-				session_name: sessionName,
-				description: sessionDescription,
-				interval: sessionInterval!,
-				start_time_utc: new Date(
-					d.getFullYear(),
-					d.getMonth(),
-					d.getDate(),
-					...sessionTimeStart.split(':').map((i) => parseInt(i))
-				).toISOString(),
-				duration_minutes: minutesBetweenTimestamps(sessionTimeStart, sessionTimeFinish),
-				genres: Array.from(document.querySelectorAll('.genre-checkbox:checked')).map(
-					(i) => i.id.replace('session-genre-', '') as Genre
-				),
-				session_website: sessionWebsite
-			};
-			if (venueParams) {
-				Object.assign(sessionParams, venueParams); // merge venue and session params - postSession can handle a new venue too
-			}
 			await postSession(sessionParams);
 			alert(
 				"Thank you for submitting a new session! We'll review your suggestions and apply the changes. If there is anything else, you can email felix.schott@proton.me"

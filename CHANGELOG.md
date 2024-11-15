@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Calendar Versioning](https://calver.org/) (`YYYY.MM.MICRO-TAG`).
 
+## [v2024.11.3-beta] - 2024-11-15
+
+### Fixed
+
+- Fixed bug in AddSessionPopup, where the venue foreign key was not added to the payload for sessions associated with existing venues (PR [#76](https://github.com/felix-schott/jamsessions/pull/76))
+- Fixed bug in Postgres function `sessions_on_date()` that resulted in `NthOfMonth` sessions being incorrectly included in query results ([#72](https://github.com/felix-schott/jamsessions/pull/72))
+
+### Added
+
+- Added `Fortnightly` interval (PR [#75](https://github.com/felix-schott/jamsessions/pull/75))
+
 ## [v2024.11.2-beta] - 2024-11-13
 
 ### Added
