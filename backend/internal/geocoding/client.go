@@ -12,7 +12,8 @@ import (
 
 type httpClientWithRateLimit struct {
 	client      *http.Client
-	Ratelimiter *rate.Limiter
+	RateLimiter *rate.Limiter
+	TimeOut     float32
 	UserAgent   string
 }
 
@@ -21,28 +22,36 @@ func (c *httpClientWithRateLimit) Do(req *http.Request) (*http.Response, error) 
 	if c.UserAgent != "" {
 		req.Header.Set("User-Agent", c.UserAgent)
 	}
-	// Comment out the below 5 lines to turn off ratelimiting
-	ctx := context.Background()
-	err := c.Ratelimiter.Wait(ctx) // This is a blocking call. Honors the rate limit
-	if err != nil {
-		return nil, err
+	// rate limiting
+	if c.RateLimiter != nil {
+		ctx := context.Background()
+		err := c.RateLimiter.Wait(ctx) // This is a blocking call. Honors the rate limit
+		if err != nil {
+			return nil, err
+		}
 	}
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
+	if c.TimeOut != 0 {
+		time.Sleep(time.Millisecond * time.Duration(c.TimeOut*1000))
+	}
 	return resp, nil
 }
 
 // Returns http client with a ratelimiter
-func NewHttpClient(rl *rate.Limiter, userAgent string) *httpClientWithRateLimit {
+// optionally pass a rate.Limiter object OR a timeout value in seconds (after each request, the process will be blocked for the duration of the timeout)
+// pass a user agent string using the third param
+func NewHttpClient(rl *rate.Limiter, timeout float32, userAgent string) *httpClientWithRateLimit {
 	var tr = &http.Transport{
 		IdleConnTimeout: 30 * time.Second,
 	}
 	var client = &http.Client{Transport: tr}
 	c := &httpClientWithRateLimit{
 		client:      client,
-		Ratelimiter: rl,
+		RateLimiter: rl,
+		TimeOut:     timeout,
 		UserAgent:   userAgent,
 	}
 	return c
