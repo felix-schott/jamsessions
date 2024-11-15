@@ -6,10 +6,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"time"
 
 	geom "github.com/twpayne/go-geom"
-	"golang.org/x/time/rate"
 )
 
 var client *httpClientWithRateLimit
@@ -68,8 +66,12 @@ func serviceIsHealthy() error {
 func Geocode(street string, city string, postcode string) (*geom.Point, error) {
 	// instantiate client that respects nominatim rate limit (max 1 request per second)
 	if client == nil {
-		rl := rate.NewLimiter(rate.Every(time.Second*1), 1)
-		client = NewHttpClient(rl, "github.com/felix-schott/jamsessions")
+		// rl := rate.NewLimiter(rate.Every(time.Second*1), 1)
+		client = NewHttpClient(nil, 1.5, "github.com/felix-schott/jamsessions") // we do a blocking call to time.Sleep for 1.2 seconds after each request
+		// not perfect but an easy way to avoid hitting the rate limit when running multiple processes
+		// as long as the execution is sequential and not parallel (this is what happens in production currently).
+		// rate.Limiter doesn't work in a multi-process environment and redis seems like an overkill since we're not running
+		// things in parallel
 	}
 
 	err := serviceIsHealthy()
