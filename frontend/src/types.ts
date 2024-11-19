@@ -84,6 +84,13 @@ export interface SessionComment {
 	rating: number // between 1 and 5
 }
 
+export interface CommentBody {
+	session?: number
+	author?: string
+	content: string
+	rating?: number
+}
+
 export interface SessionPropertiesWithVenue extends SessionProperties, VenueProperties { };
 
 export type SessionFeatureCollection = FeatureCollection<Point, SessionProperties>;

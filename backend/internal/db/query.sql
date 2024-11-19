@@ -20,9 +20,13 @@ SELECT * FROM london_jam_sessions.venues
 WHERE venue_name = $1;
 
 -- name: GetCommentsBySessionId :many
-SELECT c.*, r.rating FROM london_jam_sessions.comments c
-LEFT OUTER JOIN london_jam_sessions.ratings r ON c.comment_id = r.rating_id
+SELECT c.*, r.rating, r.rating_id FROM london_jam_sessions.comments c
+LEFT OUTER JOIN london_jam_sessions.ratings r ON c.comment_id = r.comment
 WHERE c.session = $1;
+
+-- name: GetRatingsBySessionId :many
+SELECT * FROM london_jam_sessions.ratings
+WHERE session = $1;
 
 -- name: GetAllSessions :many
 SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0)::real AS rating FROM london_jam_sessions.jamsessions s

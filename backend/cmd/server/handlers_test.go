@@ -392,7 +392,50 @@ func TestHandlers(t *testing.T) {
 			t.Errorf("error reading file: %v", err)
 		}
 
-		matched, err := regexp.Match(fmt.Sprintf(`.*.*dbcli insert comment "{\\"session\\":%v,\\"author\\":\\"\\",\\"content\\":\\"%v\\"}"`, testSession1Id, testComment), f)
+		matched, err := regexp.Match(fmt.Sprintf(`.*dbcli insert comment "{\\"session\\":%v,\\"author\\":\\"\\",\\"content\\":\\"%v\\"}"`, testSession1Id, testComment), f)
+		if err != nil {
+			t.Errorf("error when trying match with regex: %v", err)
+		}
+
+		if !matched {
+			t.Errorf("expected the regex to match. instead got file contents: %s", f)
+		}
+		// see internal/db/cli for cli tests
+	})
+
+	t.Run("PostCommentWithRating", func(t *testing.T) {
+
+		// temp directory for migrations
+		migrationsDirectory = t.TempDir()
+
+		testComment := "Test comment number 123!"
+
+		handler := fuego.HTTPHandler(s, PostCommentForSessionById)
+		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/jamsessions/%v/comments", testSession2Id), strings.NewReader(fmt.Sprintf(`{"content": "%v", "rating": 4}`, testComment)))
+		req.SetPathValue("id", fmt.Sprint(testSession2Id))
+		w := httptest.NewRecorder()
+		handler(w, req)
+		res := w.Result()
+		if res.StatusCode != 201 {
+			t.Errorf("expected status code 201, got %v", res.StatusCode)
+		}
+
+		dir, err := os.ReadDir(migrationsDirectory)
+		if err != nil {
+			t.Errorf("couldn't read directory contents: %v", err)
+			t.FailNow()
+		}
+		if len(dir) != 1 {
+			t.Errorf("expected exactly 1 file in the directory, got %v", len(dir))
+			t.FailNow()
+		}
+
+		f, err := os.ReadFile(filepath.Join(migrationsDirectory, dir[0].Name()))
+		if err != nil {
+			t.Errorf("error reading file: %v", err)
+		}
+
+		matched, err := regexp.Match(fmt.Sprintf(`.*dbcli insert comment "{\\"session\\":%v,\\"author\\":\\"\\",\\"content\\":\\"%v\\"}".*\n.*dbcli insert rating "{\\"session\\":%v,\\"rating\\":4,\\"comment\\":\$new_comment}";`, testSession2Id, testComment, testSession2Id), f)
 		if err != nil {
 			t.Errorf("error when trying match with regex: %v", err)
 		}

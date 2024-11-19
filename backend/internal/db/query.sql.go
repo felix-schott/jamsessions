@@ -153,8 +153,8 @@ func (q *Queries) GetAllVenuesAsGeoJSON(ctx context.Context) ([]byte, error) {
 }
 
 const getCommentsBySessionId = `-- name: GetCommentsBySessionId :many
-SELECT c.comment_id, c.session, c.author, c.content, c.dt_posted, r.rating FROM london_jam_sessions.comments c
-LEFT OUTER JOIN london_jam_sessions.ratings r ON c.comment_id = r.rating_id
+SELECT c.comment_id, c.session, c.author, c.content, c.dt_posted, r.rating, r.rating_id FROM london_jam_sessions.comments c
+LEFT OUTER JOIN london_jam_sessions.ratings r ON c.comment_id = r.comment
 WHERE c.session = $1
 `
 
@@ -165,6 +165,7 @@ type GetCommentsBySessionIdRow struct {
 	Content   string             `json:"content"`
 	DtPosted  pgtype.Timestamptz `json:"dt_posted"`
 	Rating    *int16             `json:"rating"`
+	RatingID  *int32             `json:"rating_id"`
 }
 
 func (q *Queries) GetCommentsBySessionId(ctx context.Context, session int32) ([]GetCommentsBySessionIdRow, error) {
@@ -183,6 +184,38 @@ func (q *Queries) GetCommentsBySessionId(ctx context.Context, session int32) ([]
 			&i.Content,
 			&i.DtPosted,
 			&i.Rating,
+			&i.RatingID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRatingsBySessionId = `-- name: GetRatingsBySessionId :many
+SELECT rating_id, session, comment, rating, dt_posted FROM london_jam_sessions.ratings
+WHERE session = $1
+`
+
+func (q *Queries) GetRatingsBySessionId(ctx context.Context, session int32) ([]LondonJamSessionsRating, error) {
+	rows, err := q.db.Query(ctx, getRatingsBySessionId, session)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LondonJamSessionsRating
+	for rows.Next() {
+		var i LondonJamSessionsRating
+		if err := rows.Scan(
+			&i.RatingID,
+			&i.Session,
+			&i.Comment,
+			&i.Rating,
+			&i.DtPosted,
 		); err != nil {
 			return nil, err
 		}

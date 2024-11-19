@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Calendar Versioning](https://calver.org/) (`YYYY.MM.MICRO-TAG`).
 
+## [v2024.11.4-beta] - 2024-11-19
+
+### Fixed
+
+- Optimised UX when switching between list and map view ([#79](https://github.com/felix-schott/jamsessions/pull/79))
+
+### Added
+
+- Added functionality for optional rating to be submitted and stored alongside a comment (PR [#83](https://github.com/felix-schott/jamsessions/pull/83))
+
+### Changed
+
+- Changed content of InfoPopup, added link to github repo (PR [#80](https://github.com/felix-schott/jamsessions/pull/80))
+- Changed order in which venues are displayed in `AddSessionPopup` to alphabetical (PR [#82](https://github.com/felix-schott/jamsessions/pull/82))
+
 ## [v2024.11.3-beta] - 2024-11-15
 
 ### Fixed

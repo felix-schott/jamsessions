@@ -2,6 +2,7 @@
 	import Modal from './Modal.svelte';
 	import {
 		Interval,
+		type CommentBody,
 		type SessionComment,
 		type SessionProperties,
 		type VenueProperties
@@ -60,10 +61,14 @@
 	// event handler
 	const onSubmitNewComment = async () => {
 		try {
-			await postCommentForSessionById(sessionProperties.session_id!, {
+			let commentBody: CommentBody = {
 				author: newCommentAuthor,
 				content: newCommentContent
-			});
+			};
+			if (newRating !== 0) {
+				commentBody['rating'] = newRating;
+			}
+			await postCommentForSessionById(sessionProperties.session_id!, commentBody);
 			alert(
 				'Thanks for submitting a comment! All content is moderated, so please bare with us while we review your comment. If there is anything else, get in touch at felix.schott@proton.me'
 			);

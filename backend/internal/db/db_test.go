@@ -237,6 +237,26 @@ func TestInsertAndRetrieveComment(t *testing.T) {
 	}
 }
 
+func TestGetRatingsBySessionId(t *testing.T) {
+	result, err := queries.GetRatingsBySessionId(ctx, fixtureSessionId)
+	if err != nil {
+		t.Errorf("could not retrieve ratings by session ids: %v", err)
+		t.FailNow()
+	}
+	if len(result) != 2 {
+		t.Error("expected two ratings to be returned, instead got", len(result))
+		t.FailNow()
+	}
+
+	if *result[0].Rating != 5 {
+		t.Error("expected the first rating to be 5, instead got", *result[0].Rating)
+	}
+
+	if *result[1].Rating != 1 {
+		t.Error("expected the second rating to be 1, instead got", *result[1].Rating)
+	}
+}
+
 func TestGetSessionIdsByDate(t *testing.T) {
 	result, err := queries.GetSessionIdsByDate(ctx, pgtype.Date{Time: time.Date(2024, 11, 19, 0, 0, 0, 0, time.UTC), Valid: true})
 	if err != nil {
