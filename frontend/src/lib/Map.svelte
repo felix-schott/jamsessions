@@ -283,6 +283,7 @@
 
 <div
 	id="map"
+	class:relative={!isMobile || (isMobile && background)}
 	onzoom={() => zoomToSession(parseInt(window.sessionStorage.getItem('activeSessionId')!))}
 	class:map-background={background}
 	class:map-foreground={!background}
@@ -302,6 +303,9 @@
 	#map {
 		height: 100%;
 		transition: width ease-in-out 1s;
+	}
+
+	.relative {
 		position: relative;
 	}
 

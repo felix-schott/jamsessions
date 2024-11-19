@@ -20,18 +20,28 @@
 	import InfoIcon from './icons/InfoIcon.svelte';
 	import SelectRating from './SelectRating.svelte';
 	import { editingSession } from '../stores';
+	import { onMount } from 'svelte';
 
 	// props
-	export let sessionProperties: SessionProperties;
-	export let venueProperties: VenueProperties;
-	export let sessionComments: SessionComment[];
+	interface Props {
+		sessionProperties: SessionProperties;
+		venueProperties: VenueProperties;
+		sessionComments: SessionComment[];
+	}
+	let { sessionProperties, venueProperties, sessionComments }: Props = $props();
 
 	// state management
-	let newCommentHidden: boolean = true;
+	let newCommentHidden: boolean = $state(true);
 
-	let newCommentContent: string;
-	let newCommentAuthor: string;
-	let newRating: number = 0;
+	let newCommentContent: string = $state('');
+	let newCommentAuthor: string = $state('');
+	let newRating: number = $state(0);
+
+	let isMobile = $state(false);
+
+	onMount(() => {
+		isMobile = window.matchMedia('(max-width: 480px)').matches;
+	});
 
 	// share functionality
 	const onShare = async () => {
@@ -57,7 +67,7 @@
 			alert(
 				'Thanks for submitting a comment! All content is moderated, so please bare with us while we review your comment. If there is anything else, get in touch at felix.schott@proton.me'
 			);
-			$editingSession = false;
+			newCommentHidden = true;
 		} catch (e) {
 			alert('An error occured when trying to post a new comment: ' + (e as Error).message);
 			throw e;
@@ -71,14 +81,21 @@
 			<!-- https://stackoverflow.com/a/24357132 -->
 			<span class="line">{sessionProperties?.session_name} </span>
 			<span class="line">
-				<ShareIcon
-					style="cursor: pointer; margin-left: 0.3em; vertical-align: middle;"
-					title="Share link to session"
-					onclick={onShare}
-				/>
+				{#if isMobile}
+					<!-- only works on mobile devices -->
+					<ShareIcon
+						style="cursor: pointer; margin-left: 0.3em; vertical-align: text-bottom;"
+						height="1.1em"
+						width="1.1em"
+						title="Share link to session"
+						onclick={onShare}
+					/>
+				{/if}
 				<EditIcon
-					style="cursor: pointer; margin-left: 0.3em; vertical-align: middle;"
+					style="cursor: pointer; margin-left: 0.3em; vertical-align: text-bottom;"
 					title="Suggest changes to this page"
+					height="1.1em"
+					width="1.1em"
 					onclick={() => {
 						$editingSession = true;
 					}}
@@ -207,7 +224,7 @@
 					}}>×</span
 				>
 				<p style="font-size: smaller;">
-					If you want to report inaccurate data instead, please <span
+					If you want to report inaccurate data, please <span
 						onclick={() => {
 							$editingSession = true;
 						}}

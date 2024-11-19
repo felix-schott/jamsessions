@@ -26,7 +26,9 @@
 	<Header positionRelative={headerRelative} />
 	<main>
 		<InfoPopup />
-		<ViewSelect class="view-select-btns" bind:this={viewSelect} />
+		{#await new Promise((resolve) => setTimeout(resolve, 1)) then}
+			<ViewSelect class="view-select-btns" bind:this={viewSelect} />
+		{/await}
 		<div class="content-wrapper">
 			<Map
 				background={$activeTab !== 'map'}
@@ -38,6 +40,7 @@
 			<SidePanel
 				background={$activeTab === 'map'}
 				hide={() => {
+					console.log('hey', $activeTab);
 					if ($activeTab === 'session') {
 						if ($editingSession) {
 							$editingSession = false;
