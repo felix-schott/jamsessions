@@ -9,6 +9,7 @@
 		Interval,
 		type SessionProperties,
 		type SessionPropertiesWithVenue,
+		type VenueFeature,
 		type VenueProperties,
 		type VenuesFeatureCollection
 	} from '../types';
@@ -41,11 +42,17 @@
 
 	// small wrapper around getVenues for better state management
 	// (venuesLoaded controls whether the menu to add a venue is shown)
-	const getVenuesContext = async () => {
+	const getVenuesAsList = async (): Promise<VenueFeature[]> => {
 		const venues = await getVenues();
 		if (venues && venues.features) {
 			venuesLoaded = true;
-			return venues;
+			// sort alphabetically
+			let alphabeticalVenues = venues.features.toSorted((a, b) =>
+				a.properties.venue_name.localeCompare(b.properties.venue_name, undefined, {
+					sensitivity: 'base'
+				})
+			);
+			return alphabeticalVenues;
 		}
 		venuesLoaded = false;
 		return [];
@@ -118,7 +125,7 @@
 	};
 </script>
 
-{#await getVenuesContext() then venues}
+{#await getVenuesAsList() then venues}
 	{#if venues}
 		<Modal
 			isVisible={() => $addSessionPopupVisible}
@@ -132,7 +139,7 @@
 					<h3>Venue</h3>
 					{#if venuesLoaded}
 						<select title="Select venue" bind:value={venueId}>
-							{#each (venues as VenuesFeatureCollection).features as venue, idx}
+							{#each venues as venue, idx}
 								{#if idx === 0}
 									<option value={venue.properties.venue_id} selected
 										>{venue.properties.venue_name}</option
