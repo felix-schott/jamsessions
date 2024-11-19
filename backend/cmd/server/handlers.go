@@ -315,13 +315,13 @@ func PostSession(c *fuego.ContextWithBody[types.SessionPropertiesWithVenue]) (ty
 		}
 
 		// set venue to bash variable that will be evaluated as the real venue id during runtime
-		payload.Venue = ptr(int32(999999))
+		payload.Venue = ptr(int32(-999999))
 		sessionJson, err = json.Marshal(payload.SessionProperties)
 		if err != nil {
 			slog.Error("PostSession", "msg", err, "props", "session")
 			return types.SessionFeature[types.SessionProperties]{}, errors.New("an unknown error occured")
 		}
-		sessionJson = []byte(strings.Replace(string(sessionJson), "999999", "$new_id", -1))
+		sessionJson = []byte(strings.Replace(string(sessionJson), "-999999", "$new_id", -1))
 
 		cmd = fmt.Sprintf(`new_id=$(dbcli insert venue "%s");`+"\n"+`dbcli insert session "%s";`, venueJson, sessionJson)
 		title = fmt.Sprintf("insert_venue_%v_session_%v", *payload.VenueName, *payload.SessionName)
@@ -372,6 +372,7 @@ type CommentBody struct {
 	Session *int   `json:"session"`
 	Author  string `json:"author"`
 	Content string `json:"content"`
+	Rating  *int16 `json:"rating,omitempty"`
 }
 
 func PostCommentForSessionById(c *fuego.ContextWithBody[CommentBody]) (types.SessionFeature[types.SessionProperties], error) {
@@ -385,11 +386,37 @@ func PostCommentForSessionById(c *fuego.ContextWithBody[CommentBody]) (types.Ses
 		return types.SessionFeature[types.SessionProperties]{}, err
 	}
 	payload.Session = ptr(id)
-	j, err := json.Marshal(payload)
-	if err != nil {
-		return types.SessionFeature[types.SessionProperties]{}, err
+
+	var cmd string
+	if payload.Rating != nil {
+
+		ratingPayload := dbutils.InsertSessionRatingParams{
+			Session: int32(id),
+			Rating:  payload.Rating,
+			Comment: ptr(int32(-999999)),
+		}
+		ratingJson, err := json.Marshal(ratingPayload)
+		if err != nil {
+			return types.SessionFeature[types.SessionProperties]{}, err
+		}
+		ratingJson = []byte(strings.Replace(string(ratingJson), "-999999", "$new_comment", -1))
+
+		payload.Rating = nil
+		commentJson, err := json.Marshal(payload)
+		if err != nil {
+			return types.SessionFeature[types.SessionProperties]{}, err
+		}
+
+		cmd = fmt.Sprintf(`new_comment=$(dbcli insert comment "%s");`+"\n"+`dbcli insert rating "%s";`, commentJson, ratingJson)
+		slog.Info("PostCommentForSessionById", "mode", "commentAndRating", "cmd", cmd)
+	} else {
+		commentJson, err := json.Marshal(payload)
+		if err != nil {
+			return types.SessionFeature[types.SessionProperties]{}, err
+		}
+		cmd = fmt.Sprintf(`dbcli insert comment "%s";`, commentJson)
+		slog.Info("PostCommentForSessionById", "mode", "commentOnly", "cmd", cmd)
 	}
-	cmd := fmt.Sprintf(`dbcli insert comment "%s"`, j)
 	if _, err := migrationutils.WriteMigration(cmd, fmt.Sprintf("insert_comment_session_%v", id), migrationsDirectory); err != nil {
 		slog.Error("PostCommentForSessionById", "id", id, "msg", err)
 		return types.SessionFeature[types.SessionProperties]{}, errors.New("an unknown error occurred")

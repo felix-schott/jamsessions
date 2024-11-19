@@ -1,4 +1,4 @@
-import { Backline, Genre, type SessionWithVenueFeatureCollection, type SessionComment, type VenuesFeatureCollection, type SessionWithVenueFeature, type VenueFeature, type VenueProperties, type SessionProperties, type SessionPropertiesWithVenue } from "./types";
+import { Backline, Genre, type CommentBody, type SessionWithVenueFeatureCollection, type SessionComment, type VenuesFeatureCollection, type SessionWithVenueFeature, type VenueFeature, type VenueProperties, type SessionProperties, type SessionPropertiesWithVenue } from "./types";
 
 const API_ROOT = process.env.API_ADDRESS.replace("/\/$/", "");
 const API_VERSION = "v1";
@@ -79,12 +79,6 @@ export const getCommentsBySessionId = async (id: number): Promise<SessionComment
     } else {
         return await response.json() as SessionComment[];
     }
-}
-
-interface CommentBody {
-    session?: number
-    author?: string
-    content: string
 }
 
 export const postCommentForSessionById = async (id: number, payload: CommentBody) => {
