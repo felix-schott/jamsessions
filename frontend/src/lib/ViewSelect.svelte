@@ -3,23 +3,41 @@
 	import MapIcon from './icons/MapIcon.svelte';
 	import type { TabOptions } from '../types';
 	import { activeTab } from '../stores';
+	import { onMount } from 'svelte';
 	interface Props {
 		class?: string;
 	}
 
 	let { class: _class = '' }: Props = $props();
+
+	let inSessionView = $state(false);
+	onMount(() => {
+		inSessionView =
+			window.location.pathname === '/' + window.sessionStorage.getItem('activeSessionId');
+	});
 </script>
 
-<div
-	class={_class}
-	class:view-select={$activeTab !== 'session'}
-	class:hidden={$activeTab === 'session'}
->
-	<button class:active={$activeTab === 'map'} onclick={() => ($activeTab = 'map')}
-		><MapIcon class="clickable" title="Show map with sessions" /></button
+<div class="{_class} view-select">
+	<button
+		class:active={$activeTab === 'map'}
+		onclick={() => {
+			if (!window.matchMedia('(max-width: 480px)').matches && inSessionView)
+				window.location.assign('/');
+			$activeTab = 'map';
+		}}><MapIcon class="clickable" title="Show map with sessions" /></button
 	>
-	<button class:active={$activeTab === 'list'} onclick={() => ($activeTab = 'list')}
-		><ListIcon class="clickable" title="Show list of sessions" /></button
+	<button
+		class:active={$activeTab === 'list' || $activeTab === 'session'}
+		onclick={() => {
+			if (!window.matchMedia('(max-width: 480px)').matches && inSessionView)
+				window.location.assign('/');
+
+			if (inSessionView) {
+				$activeTab = 'session';
+			} else {
+				$activeTab = 'list';
+			}
+		}}><ListIcon class="clickable" title="Show list of sessions" /></button
 	>
 </div>
 
