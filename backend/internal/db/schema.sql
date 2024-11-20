@@ -42,7 +42,7 @@ CREATE TABLE london_jam_sessions.jamsessions (
     session_id SERIAL PRIMARY KEY,
     session_name VARCHAR(250) NOT NULL,
     venue INTEGER NOT NULL REFERENCES london_jam_sessions.venues(venue_id) ON DELETE CASCADE, -- if a venue is deleted, all sessions associated with the venue should be deleted too
-    genres VARCHAR(50)[] CHECK(genres <@ ARRAY['Straight-Ahead_Jazz'::VARCHAR, 'Modern_Jazz'::VARCHAR, 'Trad_Jazz'::VARCHAR, 'Jazz-Funk'::VARCHAR, 'Fusion'::VARCHAR, 'Latin_Jazz'::VARCHAR, 'Funk'::VARCHAR, 'Blues'::VARCHAR, 'Folk'::VARCHAR, 'Rock'::VARCHAR, 'Pop'::VARCHAR, 'World_Music'::VARCHAR]),
+    genres VARCHAR(50)[] CHECK(genres <@ ARRAY['Straight-Ahead_Jazz'::VARCHAR, 'Modern_Jazz'::VARCHAR, 'Trad_Jazz'::VARCHAR, 'Jazz-Funk'::VARCHAR, 'Fusion'::VARCHAR, 'Latin_Jazz'::VARCHAR, 'Funk'::VARCHAR, 'RnB'::VARCHAR, 'Hip-Hop'::VARCHAR, 'Blues'::VARCHAR, 'Folk'::VARCHAR, 'Rock'::VARCHAR, 'Pop'::VARCHAR, 'World_Music'::VARCHAR]),
     start_time_utc TIMESTAMPTZ NOT NULL,
     interval VARCHAR(50) NOT NULL CHECK (interval IN ('Once', 'Daily', 'Weekly', 'Fortnightly', 'FirstOfMonth', 'SecondOfMonth', 'ThirdOfMonth', 'FourthOfMonth', 'LastOfMonth', 'IrregularWeekly')),
     duration_minutes SMALLINT NOT NULL,

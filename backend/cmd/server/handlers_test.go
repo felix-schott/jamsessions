@@ -281,6 +281,68 @@ func TestHandlers(t *testing.T) {
 		checkResultSetForSessionIds(t, []int32{testSession1Id, testSession2Id}, body)
 	})
 
+	t.Run("GetSessionsByWrongGenre", func(t *testing.T) {
+		handler := fuego.HTTPHandler(s, GetSessions)
+		req := httptest.NewRequest(http.MethodGet, "/jamsessions?genre=Foobar", nil)
+		w := httptest.NewRecorder()
+		handler(w, req)
+		res := w.Result()
+		defer res.Body.Close()
+		if res.StatusCode != 400 {
+			t.Error("expected a 400 status, got", res.StatusCode)
+		}
+		data, err := io.ReadAll(res.Body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+		if !strings.Contains(string(data), "Foobar") {
+			t.Errorf("expected the body (%s) to contain the string Foobar", data)
+		}
+	})
+
+	t.Run("PatchSession", func(t *testing.T) {
+		// temp directory for migrations
+		migrationsDirectory = t.TempDir()
+
+		handler := fuego.HTTPHandler(s, PatchSessionById)
+		req := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("/jamsessions/%v", testSession2Id), strings.NewReader(`{"interval": "Once"}`))
+		req.SetPathValue("id", fmt.Sprint(testSession2Id))
+		w := httptest.NewRecorder()
+		handler(w, req)
+		res := w.Result()
+		defer res.Body.Close()
+		if res.StatusCode != 200 {
+			t.Error("expected a 200 status, got", res.StatusCode)
+		}
+		_, err := io.ReadAll(res.Body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+	})
+
+	t.Run("PatchSessionError", func(t *testing.T) {
+		// temp directory for migrations
+		migrationsDirectory = t.TempDir()
+
+		handler := fuego.HTTPHandler(s, PatchSessionById)
+		req := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("/jamsessions/%v", testSession1Id), strings.NewReader(`{"interval": "Never"}`))
+		req.SetPathValue("id", fmt.Sprint(testSession1Id))
+		w := httptest.NewRecorder()
+		handler(w, req)
+		res := w.Result()
+		defer res.Body.Close()
+		if res.StatusCode != 400 {
+			t.Error("expected a 400 status, got", res.StatusCode)
+		}
+		data, err := io.ReadAll(res.Body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+		if !strings.Contains(string(data), "Never") {
+			t.Errorf("expected the body (%s) to contain the string Foobar", data)
+		}
+	})
+
 	//test currently failing - not essential, but should be looked into at some point
 	// t.Run("GetSessionsByDateAndBacklineNoMatch", func(t *testing.T) {
 	// 	handler := fuego.HTTPHandler(s, GetSessions)
@@ -456,7 +518,7 @@ func TestHandlers(t *testing.T) {
 			Description:     ptr("Description."),
 			StartTimeUtc:    ptr(time.Date(2024, 3, 4, 5, 5, 3, 5, time.UTC)),
 			DurationMinutes: ptr(int16(90)),
-			Interval:        ptr("FirstOfMonth"),
+			Interval:        ptr(types.FirstOfMonth),
 			SessionWebsite:  ptr("https://example.org"),
 		})
 		if err != nil {
@@ -507,7 +569,7 @@ func TestHandlers(t *testing.T) {
 			Description:     ptr("Description."),
 			StartTimeUtc:    ptr(time.Date(2024, 3, 4, 5, 5, 3, 5, time.UTC)),
 			DurationMinutes: ptr(int16(90)),
-			Interval:        ptr("FirstOfMonth"),
+			Interval:        ptr(types.FirstOfMonth),
 			SessionWebsite:  ptr("https://example.org"),
 		},
 			VenueProperties: types.VenueProperties{
@@ -516,7 +578,7 @@ func TestHandlers(t *testing.T) {
 				City:             ptr("Randomtown"),
 				Postcode:         ptr("ABC 123"),
 				VenueWebsite:     ptr("https://example.org"),
-				Backline:         &[]string{"PA", "Drums"},
+				Backline:         &[]types.Backline{types.PA, types.Drums},
 			},
 		})
 		if err != nil {

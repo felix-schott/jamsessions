@@ -19,94 +19,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type Interval int
-
-const (
-	Once Interval = iota
-	Daily
-	Weekly
-	Fortnightly
-	FirstOfMonth
-	SecondOfMonth
-	ThirdOfMonth
-	FourthOfMonth
-	LastOfMonth
-	IrregularWeekly
-)
-
-type Backline int
-
-const (
-	PA Backline = iota
-	GuitarAmp
-	BassAmp
-	Drums
-	Keys
-	Mic
-	MiscPercussion
-)
-
-var backlineStrToEnum = map[string]Backline{
-	"PA":             PA,
-	"Guitar_Amp":     GuitarAmp,
-	"Bass_Amp":       BassAmp,
-	"Drums":          Drums,
-	"Microphone":     Mic,
-	"MiscPercussion": MiscPercussion,
-	"Keys":           Keys,
-}
-
-func (b Backline) String() string {
-	for k, v := range backlineStrToEnum {
-		if v == b {
-			return k
-		}
-	}
-	return ""
-}
-
-type Genre int
-
-const (
-	Any Genre = iota
-	StraightAhead
-	JazzFunk
-	Fusion
-	LatinJazz
-	ModernJazz
-	TradJazz
-	Funk
-	Blues
-	Folk
-	Rock
-	Pop
-	WorldMusic
-)
-
-var genreStrToEnum = map[string]Genre{
-	"Straight-Ahead_Jazz": StraightAhead,
-	"Jazz-Funk":           JazzFunk,
-	"Fusion":              Fusion,
-	"Latin_Jazz":          LatinJazz,
-	"Funk":                Funk,
-	"Blues":               Blues,
-	"Folk":                Folk,
-	"Rock":                Rock,
-	"Pop":                 Pop,
-	"World_Music":         WorldMusic,
-	"Modern_Jazz":         ModernJazz,
-	"Trad_Jazz":           TradJazz,
-}
-
-func (b Genre) String() string {
-	for k, v := range genreStrToEnum {
-		if v == b {
-			return k
-		}
-	}
-	return ""
-}
-
 func GetVenues(c *fuego.ContextNoBody) (types.VenueFeatureCollection, error) {
 	var geojson types.FeatureCollection[types.VenueFeature]
 	result, err := queries.GetAllVenuesAsGeoJSON(ctx)
@@ -156,7 +68,7 @@ func GetSessions(c *fuego.ContextNoBody) (types.SessionWithVenueFeatureCollectio
 		} else if k == "backline" {
 			backlineSlice := strings.Split(c.QueryParam("backline"), ",")
 			for _, b := range backlineSlice {
-				_, ok := backlineStrToEnum[b]
+				_, ok := types.BacklineOptions[types.Backline(b)]
 				if !ok {
 					return geojson, fuego.BadRequestError{Detail: fmt.Sprintf("%v is not a valid value for 'backline'", b)}
 				}
@@ -164,9 +76,9 @@ func GetSessions(c *fuego.ContextNoBody) (types.SessionWithVenueFeatureCollectio
 			backline = &backlineSlice
 		} else if k == "genre" {
 			genreParam := c.QueryParam("genre")
-			_, ok := genreStrToEnum[genreParam]
+			_, ok := types.Genres[types.Genre(genreParam)]
 			if !ok {
-				return geojson, fuego.BadRequestError{Detail: fmt.Sprintf("%v is not a valid value for 'genre'", genre)}
+				return geojson, fuego.BadRequestError{Detail: fmt.Sprintf("%v is not a valid value for 'genre'", genreParam)}
 			}
 			genre = &genreParam
 		} else {
@@ -248,7 +160,9 @@ func GetSessions(c *fuego.ContextNoBody) (types.SessionWithVenueFeatureCollectio
 	if err != nil {
 		return geojson, err
 	}
-	json.Unmarshal(result, &geojson)
+	if err := json.Unmarshal(result, &geojson); err != nil {
+		return geojson, err
+	}
 	slog.Info("GetSessions", "result", geojson)
 	return geojson, nil
 }
@@ -302,6 +216,9 @@ func PostSession(c *fuego.ContextWithBody[types.SessionPropertiesWithVenue]) (ty
 	slog.Info("PostSession", "payload", payload)
 	if err != nil {
 		slog.Error("PostSession", "msg", err)
+		if errors.As(err, &types.ValidationError{}) {
+			return types.SessionFeature[types.SessionProperties]{}, fuego.BadRequestError{Detail: err.Error()}
+		}
 		return types.SessionFeature[types.SessionProperties]{}, errors.New("an unknown error occured")
 	}
 	var cmd string
@@ -352,6 +269,9 @@ func PatchSessionById(c *fuego.ContextWithBody[types.SessionProperties]) (types.
 	}
 	payload, err := c.Body()
 	if err != nil {
+		if errors.As(err, &types.ValidationError{}) {
+			return types.SessionFeature[types.SessionProperties]{}, fuego.BadRequestError{Detail: err.Error()}
+		}
 		slog.Error("PatchSessionById", "id", id, "msg", err)
 		return types.SessionFeature[types.SessionProperties]{}, errors.New("an unknown error occured")
 	}
@@ -477,6 +397,9 @@ func PostVenue(c *fuego.ContextWithBody[types.VenueProperties]) (types.VenueFeat
 	payload, err := c.Body()
 	if err != nil {
 		slog.Error("PostVenue", "msg", err)
+		if errors.As(err, &types.ValidationError{}) {
+			return types.VenueFeature{}, fuego.BadRequestError{Detail: err.Error()}
+		}
 		return types.VenueFeature{}, errors.New("an unknown error occured")
 	}
 	j, err := json.Marshal(payload)
@@ -504,6 +427,9 @@ func PatchVenueById(c *fuego.ContextWithBody[types.VenueProperties]) (types.Venu
 	payload, err := c.Body()
 	if err != nil {
 		slog.Error("PatchVenueById", "id", id, "msg", err)
+		if errors.As(err, &types.ValidationError{}) {
+			return types.VenueFeature{}, fuego.BadRequestError{Detail: err.Error()}
+		}
 		return types.VenueFeature{}, errors.New("an unknown error occured")
 	}
 	j, err := json.Marshal(payload)
