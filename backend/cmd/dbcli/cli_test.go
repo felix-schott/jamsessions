@@ -137,7 +137,7 @@ func TestCli(t *testing.T) {
 			Description:     ptr("Bla bla"),
 			StartTimeUtc:    ptr(time.Date(2024, 5, 7, 1, 1, 1, 1, time.UTC)),
 			DurationMinutes: ptr(int16(30)),
-			Interval:        ptr("Weekly"),
+			Interval:        ptr(types.Weekly),
 		}
 		testSessionJson, err := json.Marshal(testSessionProps)
 		if err != nil {

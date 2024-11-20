@@ -27,6 +27,8 @@ export enum Genre {
 	FUSION = 'Fusion',
 	LATIN_JAZZ = 'Latin_Jazz',
 	FUNK = 'Funk',
+	RNB = 'RnB',
+	HIPHOP = 'Hip-Hop',
 	BLUES = 'Blues',
 	FOLK = 'Folk',
 	ROCK = 'Rock',
