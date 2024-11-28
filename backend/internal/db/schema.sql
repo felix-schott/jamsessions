@@ -125,11 +125,11 @@ AS $$
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION london_jam_sessions.sessions_on_date(d date) 
-RETURNS TABLE (session_id int, dates date[], start timestamptz, dow_start int, dow_d int)
+RETURNS TABLE (session_id int, dates date[])
 AS $$
     BEGIN
         RETURN QUERY
-        SELECT s.session_id, ARRAY[d], s.start_time_utc, EXTRACT(dow FROM s.start_time_utc)::int, EXTRACT(dow FROM d::date)::int FROM london_jam_sessions.jamsessions s
+        SELECT s.session_id, ARRAY[d] FROM london_jam_sessions.jamsessions s
         WHERE s.start_time_utc::date <= d -- make sure we don't match any future sessions
         AND (
             s.interval = 'Daily' AND s.start_time_utc::date <= d
