@@ -25,32 +25,34 @@
 	let selectedDateStr: string = $state('');
 
 	const onDateChange = async () => {
-		$loading = true;
-		window.sessionStorage.setItem('selectedDateStr', selectedDateStr);
-		try {
-			let params: SessionOptions = {
-				date: new Date(selectedDateStr),
-				backline: window.sessionStorage.getItem('selectedBackline')?.split(',') as Backline[],
-				genre: window.sessionStorage.getItem('selectedGenre') as Genre
-			};
-			if (
-				window.sessionStorage.getItem('selectedDateRange') &&
-				window.sessionStorage.getItem('selectedDateRange') !== '0'
-			) {
-				let endDate = new Date(selectedDateStr);
-				endDate!.setDate(
-					endDate!.getDate() + parseInt(window.sessionStorage.getItem('selectedDateRange')!)
-				);
-				params['endDate'] = endDate;
+		if (selectedDateStr) {
+			$loading = true;
+			window.sessionStorage.setItem('selectedDateStr', selectedDateStr);
+			try {
+				let params: SessionOptions = {
+					date: new Date(selectedDateStr),
+					backline: window.sessionStorage.getItem('selectedBackline')?.split(',') as Backline[],
+					genre: window.sessionStorage.getItem('selectedGenre') as Genre
+				};
+				if (
+					window.sessionStorage.getItem('selectedDateRange') &&
+					window.sessionStorage.getItem('selectedDateRange') !== '0'
+				) {
+					let endDate = new Date(selectedDateStr);
+					endDate!.setDate(
+						endDate!.getDate() + parseInt(window.sessionStorage.getItem('selectedDateRange')!)
+					);
+					params['endDate'] = endDate;
+				}
+				$selectedSessions = await getSessions(params);
+			} catch (e) {
+				alert('An error occured when waiting for data from the server: ' + (e as Error).message);
+				throw e;
 			}
-			$selectedSessions = await getSessions(params);
-		} catch (e) {
-			alert('An error occured when waiting for data from the server: ' + (e as Error).message);
-			throw e;
-		}
 
-		$visibleLayer = MapLayer.SESSIONS;
-		$loading = false;
+			$visibleLayer = MapLayer.SESSIONS;
+			$loading = false;
+		}
 	};
 
 	onMount(async () => {
