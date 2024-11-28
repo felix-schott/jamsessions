@@ -17,11 +17,11 @@ import (
 
 var queries *Queries
 var ctx = context.Background()
-var fixtureSessionId int32
-var fixtureSessionId2 int32
-var fixtureSessionId3 int32
-var fixtureSessionId4 int32
-var fixtureSessionId5 int32
+var fixtureWeeklySunday int32
+var fixtureDaily int32
+var fixtureThirdOfMonthMonday int32
+var fixtureLastOfMonthSaturday int32
+var fixtureFortnightlyWednesday int32
 
 func TestMain(m *testing.M) {
 	setup()
@@ -62,27 +62,27 @@ func setup() {
 	queries = New(pool)
 
 	// add dummy records to both Venue and JamSession table
-	fixtureSessionId, err = insertSession("Ronnie Scott's Jazz Club", 12, 18, 15, "Weekly")
+	fixtureWeeklySunday, err = insertSession("Ronnie Scott's Jazz Club", 12, 18, 15, "Weekly") // sunday
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fixtureSessionId2, err = insertSession("Ronnie Scott's Jazz Cafe", 13, 19, 15, "Daily")
+	fixtureDaily, err = insertSession("Ronnie Scott's Jazz Cafe", 13, 19, 15, "Daily")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fixtureSessionId3, err = insertSession("Ronnie Scott's Jazz Bar", 14, 19, 15, "ThirdOfMonth")
+	fixtureThirdOfMonthMonday, err = insertSession("Ronnie Scott's Jazz Bar", 14, 19, 15, "ThirdOfMonth") // monday
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fixtureSessionId4, err = insertSession("Ronnie Scott's Jazz Restaurant", 15, 29, 15, "LastOfMonth")
+	fixtureLastOfMonthSaturday, err = insertSession("Ronnie Scott's Jazz Restaurant", 15, 24, 15, "LastOfMonth") // saturday
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fixtureSessionId5, err = insertSession("Ronnie Scott's Jazz Diner", 16, 28, 15, "Fortnightly")
+	fixtureFortnightlyWednesday, err = insertSession("Ronnie Scott's Jazz Diner", 16, 28, 15, "Fortnightly") // wednesday
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -90,14 +90,14 @@ func setup() {
 
 // don't really need this as we're using an ephemeral testing database
 // func teardown() {
-// 	if fixtureSessionId != 0 {
-// 		err := queries.DeleteVenueByJamSessionId(ctx, fixtureSessionId)
+// 	if fixtureWeeklySunday != 0 {
+// 		err := queries.DeleteVenueByJamSessionId(ctx, fixtureWeeklySunday)
 // 		if err != nil {
-// 			log.Fatalf("could not delete venue previously inserted for session id %v: %v", fixtureSessionId, err)
+// 			log.Fatalf("could not delete venue previously inserted for session id %v: %v", fixtureWeeklySunday, err)
 // 		}
-// 		err = queries.DeleteJamSessionById(ctx, fixtureSessionId)
+// 		err = queries.DeleteJamSessionById(ctx, fixtureWeeklySunday)
 // 		if err != nil {
-// 			log.Fatalf("could not delete session with id %v", fixtureSessionId)
+// 			log.Fatalf("could not delete session with id %v", fixtureWeeklySunday)
 // 		}
 // 	}
 // }
@@ -161,8 +161,8 @@ func TestInsertJamsession(t *testing.T) {
 	if err != nil {
 		t.Fatalf("encountered an error when inserting a new session: %v", err)
 	}
-	if newSessionId == fixtureSessionId {
-		t.Errorf("expected the new session ID to be different from the fixture (new: %v, fixture: %v)", newSessionId, fixtureSessionId)
+	if newSessionId == fixtureWeeklySunday {
+		t.Errorf("expected the new session ID to be different from the fixture (new: %v, fixture: %v)", newSessionId, fixtureWeeklySunday)
 	}
 	result, err := queries.GetSessionById(ctx, newSessionId)
 	if err != nil {
@@ -197,18 +197,18 @@ func TestGetAllSessionsAsGeoJSON(t *testing.T) {
 }
 
 func TestGetSessionById(t *testing.T) {
-	result, err := queries.GetSessionById(ctx, fixtureSessionId)
+	result, err := queries.GetSessionById(ctx, fixtureWeeklySunday)
 	if err != nil {
 		t.Fatalf("failed to retrieve session by id: %v", err)
 	}
-	if result.SessionID != fixtureSessionId {
-		t.Errorf("expected the returned ID (%v) to be the same as the fixture ID (%v)", result.SessionID, fixtureSessionId)
+	if result.SessionID != fixtureWeeklySunday {
+		t.Errorf("expected the returned ID (%v) to be the same as the fixture ID (%v)", result.SessionID, fixtureWeeklySunday)
 	}
 }
 
 func TestGetSessionsByIdAsGeoJSON(t *testing.T) {
 	var geojson types.SessionFeature[types.SessionProperties]
-	result, err := queries.GetSessionByIdAsGeoJSON(ctx, fixtureSessionId)
+	result, err := queries.GetSessionByIdAsGeoJSON(ctx, fixtureWeeklySunday)
 	if err != nil {
 		t.Fatalf("failed to retrieve sessions as geojson: %v", err)
 	}
@@ -220,7 +220,7 @@ func TestGetSessionsByIdAsGeoJSON(t *testing.T) {
 
 func TestInsertAndRetrieveComment(t *testing.T) {
 	insertedCommentId, err := queries.InsertSessionComment(ctx, InsertSessionCommentParams{
-		Session: fixtureSessionId,
+		Session: fixtureWeeklySunday,
 		Author:  "foo",
 		Content: "Example comment foo bar.",
 	})
@@ -238,7 +238,7 @@ func TestInsertAndRetrieveComment(t *testing.T) {
 }
 
 func TestGetRatingsBySessionId(t *testing.T) {
-	result, err := queries.GetRatingsBySessionId(ctx, fixtureSessionId)
+	result, err := queries.GetRatingsBySessionId(ctx, fixtureWeeklySunday)
 	if err != nil {
 		t.Errorf("could not retrieve ratings by session ids: %v", err)
 		t.FailNow()
@@ -280,42 +280,11 @@ func TestGetSessionIdsByDate(t *testing.T) {
 		t.Errorf("expected the dates array to be of size 1, got %v", dates[0])
 	}
 	date := types.Date(dates[0][0].(time.Time))
-	if ids[0] != fixtureSessionId2 { // type cast
-		t.Errorf("expected fixture 2 (%v), got %v", fixtureSessionId2, ids[0])
+	if ids[0] != fixtureDaily { // type cast
+		t.Errorf("expected fixture 2 (%v), got %v", fixtureDaily, ids[0])
 	}
 	if date.String() != "2024-11-19" {
 		t.Errorf("expected the dates attribute to be 2024-11-19, got %v", date.String())
-	}
-}
-
-func TestGetSessionIdsByDate3(t *testing.T) {
-	result, err := queries.GetSessionIdsByDate(ctx, pgtype.Date{Time: time.Date(2024, 11, 28, 0, 0, 0, 0, time.UTC), Valid: true})
-	if err != nil {
-		t.Errorf("could not retrieve session ids by date: %v", err)
-		t.FailNow()
-	}
-	var ids []int32
-	var dates [][]any
-	for idx := range result {
-		s := result[idx].([]any)
-		id := s[0].(int32)
-		d := s[1].([]any)
-		ids = append(ids, id)
-		dates = append(dates, d)
-	}
-	if len(result) != 2 {
-		t.Errorf("expected exactly 2 item in the result set, got IDs %v", ids)
-		t.FailNow()
-	}
-	if len(dates[1]) != 1 {
-		t.Errorf("expected the dates array to be of size 1, got %v", dates[1])
-	}
-	date := types.Date(dates[0][0].(time.Time))
-	if ids[1] != fixtureSessionId4 { // type cast
-		t.Errorf("expected fixture 4 (%v), got %v", fixtureSessionId4, ids[1])
-	}
-	if date.String() != "2024-11-28" {
-		t.Errorf("expected the dates attribute to be 2024-11-28, got %v", date.String())
 	}
 }
 
@@ -342,11 +311,43 @@ func TestGetSessionIdsByDate2(t *testing.T) {
 		t.Errorf("expected the dates array to be of size 1, got %v", dates[1])
 	}
 	date := types.Date(dates[0][0].(time.Time))
-	if ids[1] != fixtureSessionId3 { // type cast
-		t.Errorf("expected fixture 3 (%v), got %v", fixtureSessionId3, ids[1])
+	if ids[1] != fixtureThirdOfMonthMonday { // type cast
+		t.Errorf("expected fixture 3 (%v), got %v", fixtureThirdOfMonthMonday, ids[1])
 	}
 	if date.String() != "2024-11-18" {
 		t.Errorf("expected the dates attribute to be 2024-11-18, got %v", date.String())
+	}
+}
+
+func TestGetSessionIdsByDate3(t *testing.T) { // sunday
+	result, err := queries.GetSessionIdsByDate(ctx, pgtype.Date{Time: time.Date(2024, 11, 30, 0, 0, 0, 0, time.UTC), Valid: true})
+	if err != nil {
+		t.Errorf("could not retrieve session ids by date: %v", err)
+		t.FailNow()
+	}
+	if len(result) != 2 { // we expect id 2 (daily) and 4 (last saturday of the month)
+		t.Error("expected exactly 2 item in the result set, got", result)
+		t.FailNow()
+	}
+	for _, i := range result {
+		s := i.([]any)
+		sessionId := s[0].(int32)
+		dates := s[1].([]any)
+		if sessionId == fixtureDaily {
+			if len(dates) != 1 { // daily
+				t.Error("expected exactly 1 item in the date array, instead got", s[1])
+			}
+		} else if sessionId == fixtureLastOfMonthSaturday {
+			// third monday of month, just once
+			if len(dates) != 1 {
+				t.Errorf("expected exactly 1 item in the date array for session %v, instead got %v", fixtureLastOfMonthSaturday, dates)
+			}
+			if !time.Date(2024, 11, 30, 0, 0, 0, 0, time.UTC).Equal(dates[0].(time.Time)) {
+				t.Error("expected the date to be 2024-11-30, instead got", dates[0])
+			}
+		} else {
+			t.Error("unexpected item", s)
+		}
 	}
 }
 
@@ -373,11 +374,42 @@ func TestGetSessionIdsByDate4(t *testing.T) {
 		t.Errorf("expected the dates array to be of size 1, got %v", dates[1])
 	}
 	date := types.Date(dates[0][0].(time.Time))
-	if ids[1] != fixtureSessionId5 { // type cast
-		t.Errorf("expected fixture 5 (%v), got %v", fixtureSessionId5, ids[1])
+	if ids[1] != fixtureFortnightlyWednesday { // type cast
+		t.Errorf("expected fixture 5 (%v), got %v", fixtureFortnightlyWednesday, ids[1])
 	}
 	if date.String() != "2024-09-11" {
 		t.Errorf("expected the dates attribute to be 2024-09-11, got %v", date.String())
+	}
+}
+
+func TestGetSessionIdsByDate5(t *testing.T) {
+	result, err := queries.GetSessionIdsByDate(ctx, pgtype.Date{Time: time.Date(2024, 11, 27, 0, 0, 0, 0, time.UTC), Valid: true})
+	if err != nil {
+		t.Errorf("could not retrieve session ids by date: %v", err)
+		t.FailNow()
+	}
+	var ids []int32
+	var dates [][]any
+	for idx := range result {
+		s := result[idx].([]any)
+		id := s[0].(int32)
+		d := s[1].([]any)
+		ids = append(ids, id)
+		dates = append(dates, d)
+	}
+	if len(result) != 1 {
+		t.Errorf("expected exactly 1 item in the result set, got IDs %v", ids)
+		t.FailNow()
+	}
+	if len(dates[0]) != 1 {
+		t.Errorf("expected the dates array to be of size 1, got %v", dates[0])
+	}
+	date := types.Date(dates[0][0].(time.Time)) // type cast
+	if ids[0] != fixtureDaily {
+		t.Errorf("expected fixture 2 (%v), got %v", fixtureDaily, ids[0])
+	}
+	if date.String() != "2024-11-27" {
+		t.Errorf("expected the dates attribute to be 2024-11-27, got %v", date.String())
 	}
 }
 
@@ -399,8 +431,8 @@ func TestGetSessionsByDate(t *testing.T) {
 		t.Errorf("expected exactly 1 item in the result set, got ids %v", ids)
 		t.FailNow()
 	}
-	if *j.Features[0].Properties.SessionID != fixtureSessionId2 {
-		t.Errorf("expected fixture 2 (%v), got %v", fixtureSessionId2, *j.Features[0].Properties.SessionID)
+	if *j.Features[0].Properties.SessionID != fixtureDaily {
+		t.Errorf("expected fixture 2 (%v), got %v", fixtureDaily, *j.Features[0].Properties.SessionID)
 	}
 	if j.Features[0].Properties.Dates == nil {
 		t.Error("dates property shouldn't be nil")
@@ -424,30 +456,30 @@ func TestGetSessionIdsByDateRange(t *testing.T) {
 		s := i.([]any)
 		sessionId := s[0].(int32)
 		dates := s[1].([]any)
-		if sessionId == fixtureSessionId2 {
+		if sessionId == fixtureDaily {
 			if len(dates) != 7 { // daily, so must be the number of days between start and end
 				t.Error("expected exactly 7 items in the date array, instead got", s[1])
 			}
-		} else if sessionId == fixtureSessionId3 {
+		} else if sessionId == fixtureThirdOfMonthMonday {
 			// third monday of month, just once
 			if len(dates) != 1 {
-				t.Errorf("expected exactly 1 item in the date array for session %v, instead got %v", fixtureSessionId3, dates)
+				t.Errorf("expected exactly 1 item in the date array for session %v, instead got %v", fixtureThirdOfMonthMonday, dates)
 			}
 			if !time.Date(2024, 11, 18, 0, 0, 0, 0, time.UTC).Equal(dates[0].(time.Time)) {
 				t.Error("expected the date to be 2024-11-18, instead got", dates[0])
 			}
-		} else if sessionId == fixtureSessionId {
+		} else if sessionId == fixtureWeeklySunday {
 			// every Sunday, once in this time window
 			if len(dates) != 1 {
-				t.Errorf("expected exactly 1 item in the date array for session %v, instead got %v", fixtureSessionId, dates)
+				t.Errorf("expected exactly 1 item in the date array for session %v, instead got %v", fixtureWeeklySunday, dates)
 
 			}
 			if !time.Date(2024, 11, 17, 0, 0, 0, 0, time.UTC).Equal(dates[0].(time.Time)) {
 				t.Error("expected the date to be 2024-11-17, instead got", dates[0])
 			}
-		} else if sessionId == fixtureSessionId5 {
+		} else if sessionId == fixtureFortnightlyWednesday {
 			if len(dates) != 1 {
-				t.Errorf("expected exactly 1 item in the date array for session %v, instead got %v", fixtureSessionId5, dates)
+				t.Errorf("expected exactly 1 item in the date array for session %v, instead got %v", fixtureFortnightlyWednesday, dates)
 			}
 			if !time.Date(2024, 11, 20, 0, 0, 0, 0, time.UTC).Equal(dates[0].(time.Time)) {
 				t.Error("expected the date to be 2024-11-20, instead got", dates[0])
@@ -460,14 +492,14 @@ func TestGetSessionIdsByDateRange(t *testing.T) {
 
 func TestGetSessionIdsByDateRange2(t *testing.T) {
 	result, err := queries.GetSessionIdsByDateRange(ctx, GetSessionIdsByDateRangeParams{
-		StartDate: pgtype.Date{Time: time.Date(2024, 11, 27, 0, 0, 0, 0, time.UTC), Valid: true},
-		EndDate:   pgtype.Date{Time: time.Date(2024, 11, 28, 0, 0, 0, 0, time.UTC), Valid: true},
+		StartDate: pgtype.Date{Time: time.Date(2024, 11, 29, 0, 0, 0, 0, time.UTC), Valid: true},
+		EndDate:   pgtype.Date{Time: time.Date(2024, 11, 30, 0, 0, 0, 0, time.UTC), Valid: true},
 	})
 	if err != nil {
 		t.Errorf("could not retrieve session ids by date range: %v", err)
 		t.FailNow()
 	}
-	if len(result) != 2 {
+	if len(result) != 2 { // we expect id 2 (daily), 1 (weekly on a monday - 25th)
 		t.Error("expected exactly 2 items in the result set, instead got", result)
 		t.FailNow()
 	}
@@ -475,17 +507,20 @@ func TestGetSessionIdsByDateRange2(t *testing.T) {
 		s := i.([]any)
 		sessionId := s[0].(int32)
 		dates := s[1].([]any)
-		if sessionId == fixtureSessionId2 {
+		if sessionId == fixtureDaily {
 			if len(dates) != 2 { // daily, so must be the number of days between start and end
 				t.Error("expected exactly 2 items in the date array, instead got", s[1])
 			}
-		} else if sessionId == fixtureSessionId4 {
+			if !time.Date(2024, 11, 29, 0, 0, 0, 0, time.UTC).Equal(dates[0].(time.Time)) {
+				t.Error("expected the date to be 2024-11-29, instead got", dates[0])
+			}
+		} else if sessionId == fixtureLastOfMonthSaturday {
 			// third monday of month, just once
 			if len(dates) != 1 {
-				t.Errorf("expected exactly 1 item in the date array for session %v, instead got %v", fixtureSessionId4, dates)
+				t.Errorf("expected exactly 1 item in the date array for session %v, instead got %v", fixtureLastOfMonthSaturday, dates)
 			}
-			if !time.Date(2024, 11, 28, 0, 0, 0, 0, time.UTC).Equal(dates[0].(time.Time)) {
-				t.Error("expected the date to be 2024-11-28, instead got", dates[0])
+			if !time.Date(2024, 11, 30, 0, 0, 0, 0, time.UTC).Equal(dates[0].(time.Time)) {
+				t.Error("expected the date to be 2024-11-30, instead got", dates[0])
 			}
 		} else {
 			t.Error("unexpected item", sessionId)
@@ -511,8 +546,8 @@ func TestGetSessionsByDateRange(t *testing.T) {
 		t.Errorf("expected at least 1 feature, got %v", len(result.Features))
 		t.FailNow()
 	}
-	if *result.Features[0].Properties.SessionID != fixtureSessionId {
-		t.Errorf("expected returned session (%v) to match the inserted fixture (%v)", *result.Features[0].Properties.SessionID, fixtureSessionId)
+	if *result.Features[0].Properties.SessionID != fixtureWeeklySunday {
+		t.Errorf("expected returned session (%v) to match the inserted fixture (%v)", *result.Features[0].Properties.SessionID, fixtureWeeklySunday)
 	}
 	if result.Features[0].Properties.Dates == nil {
 		t.Error("dates property shouldn't be nil")
