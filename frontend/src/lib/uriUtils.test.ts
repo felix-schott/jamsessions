@@ -42,21 +42,21 @@ test("extractDomain works correctly (no path, no trailing slash)", () => {
 
 test("processVenueAndSessionUrl works correctly with same domain, different paths", () => {
     expect(processVenueAndSessionUrl("http://example.com", "http://example.com/events/1")).toStrictEqual({
-        venueDomain: "example.com",
-        sessionDomain: "example.com/events"
+        venueWebsite: "example.com",
+        sessionWebsite: "example.com/events"
     });
 })
 
 test("processVenueAndSessionUrl works correctly with same domain", () => {
     expect(processVenueAndSessionUrl("http://example.com", "http://example.com")).toStrictEqual({
-        venueDomain: "example.com",
-        sessionDomain: null
+        venueWebsite: "example.com",
+        sessionWebsite: null
     });
 })
 
 test("processVenueAndSessionUrl works correctly with different domains", () => {
     expect(processVenueAndSessionUrl("http://example.com", "http://example2.com")).toStrictEqual({
-        venueDomain: "example.com",
-        sessionDomain: "example2.com"
+        venueWebsite: "example.com",
+        sessionWebsite: "example2.com"
     });
 })
