@@ -19,6 +19,19 @@ SELECT public.ST_AsGeoJSON(t.*) FROM t;
 SELECT * FROM london_jam_sessions.venues
 WHERE venue_name = $1;
 
+-- name: GetSessionsByVenueIdAsGeoJSON :one
+WITH t AS (
+    SELECT s.*, l.*, coalesce(round(avg(rating), 2), 0)::real AS rating FROM london_jam_sessions.jamsessions s
+    JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
+    LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
+    WHERE l.venue_id = $1
+    GROUP BY s.session_id, l.venue_id
+)
+SELECT json_build_object(
+    'type', 'FeatureCollection',
+    'features', json_agg(public.ST_AsGeoJSON(t.*)::json)
+) FROM t;
+
 -- name: GetCommentsBySessionId :many
 SELECT c.*, r.rating, r.rating_id FROM london_jam_sessions.comments c
 LEFT OUTER JOIN london_jam_sessions.ratings r ON c.comment_id = r.comment

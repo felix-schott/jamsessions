@@ -14,10 +14,10 @@
 <div class="side-panel" class:background class:padding={!background}>
 	{#if !background}
 		<WindowControlButton type="close" onclick={hide} />
-		<div>
-			{@render children()}
-		</div>
 	{/if}
+	<div>
+		{@render children()}
+	</div>
 </div>
 
 <style>

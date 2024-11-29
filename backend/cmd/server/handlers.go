@@ -205,6 +205,26 @@ func GetVenueById(c *fuego.ContextNoBody) (types.VenueFeature, error) {
 	return geojson, nil
 }
 
+func GetSessionsByVenueId(c *fuego.ContextNoBody) (types.SessionWithVenueFeatureCollection, error) {
+	slog.Info("GetSessionsByVenueId", "id", c.PathParam("id"))
+	id, err := strconv.Atoi(c.PathParam("id"))
+	if err != nil {
+		return types.SessionWithVenueFeatureCollection{}, fuego.BadRequestError{Detail: fmt.Sprintf("Please provide a numeric ID ('/venues/{id}'), got: %v", c.PathParam("id"))}
+	}
+	result, err := queries.GetSessionsByVenueIdAsGeoJSON(ctx, int32(id))
+	if err != nil {
+		slog.Error("GetSessionsByVenueId", "msg", err)
+		return types.SessionWithVenueFeatureCollection{}, errors.New("an unknown error occured")
+	}
+	var geojson types.SessionWithVenueFeatureCollection
+	err = json.Unmarshal(result, &geojson)
+	if err != nil {
+		return geojson, err
+	}
+	slog.Info("GetVenueById", "result", geojson)
+	return geojson, nil
+}
+
 // the following handlers don't directly apply changes but rather prepare commits for the admin to manually run (make migrations or scripts/run-migrations.sh)
 // this is to prevent users from directly modifying the database
 

@@ -16,12 +16,10 @@
 
 	import { onMount, mount } from 'svelte';
 	import {
-		visibleLayer,
 		selectedSessions
 		// activeVenueProperties,
 	} from '../stores';
 	import {
-		MapLayer,
 		type SessionProperties,
 		type SessionPropertiesWithVenue,
 		type VenueProperties
@@ -72,7 +70,7 @@
 
 	// reactivity - whenever the stores change (and the condition evaluates to true, the respective render function is called)
 	$effect(() => {
-		if (map && $visibleLayer == MapLayer.SESSIONS && $selectedSessions !== null) renderSessions();
+		if (map !== undefined && $selectedSessions !== null) renderSessions();
 	});
 
 	$effect(() => {
@@ -91,8 +89,6 @@
 			}
 		}
 	});
-
-	// $: if ($visibleLayer == MapLayer.VENUES && $venues != null) renderVenues();
 
 	// handler funcs - both follow the same structure
 	// 1. overwrite features in source with values from store
@@ -134,13 +130,12 @@
 			if (view) {
 				let activeSessionId = window.sessionStorage.getItem('activeSessionId');
 				if (activeSessionId !== null) {
-					view.fit(
-						features
-							.find((i: Feature) => i.getProperties().session_id === parseInt(activeSessionId))
-							?.getGeometry()
-							?.getExtent()!,
-						{ maxZoom: 15 }
+					let activeMarker = features.find(
+						(i: Feature) => i.getProperties().session_id === parseInt(activeSessionId)
 					);
+					if (activeMarker) view.fit(activeMarker.getGeometry()?.getExtent()!, { maxZoom: 15 });
+					// else console.log(`active marker ${activeSessionId} not in $selectedSessions`);
+					// above is debug statement - normally it's fine if it happens when going back from e.g. venue view to start view
 				} else {
 					view.fit(sessionsSource.getExtent()!, {
 						maxZoom: 13,

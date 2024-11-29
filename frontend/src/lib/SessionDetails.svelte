@@ -1,13 +1,13 @@
 <script lang="ts">
-	import Modal from './Modal.svelte';
 	import {
 		Interval,
 		type CommentBody,
 		type SessionComment,
 		type SessionProperties,
-		type VenueProperties
+		type SessionPropertiesWithVenue
 	} from '../types';
 	import LocationIcon from './icons/LocationIcon.svelte';
+	import HomeIcon from './icons/HomeIcon.svelte';
 	import ShareIcon from './icons/ShareIcon.svelte';
 	import TimeIcon from './icons/TimeIcon.svelte';
 	import FileTrayIcon from './icons/FileTrayIcon.svelte';
@@ -18,6 +18,7 @@
 	import PlusIcon from './icons/PlusIcon.svelte';
 	import { postCommentForSessionById } from '../api';
 	import { constructTimeString } from './timeUtils';
+	import { extractDomain, sanitisePathElement, processVenueAndSessionUrl } from './uriUtils';
 	import InfoIcon from './icons/InfoIcon.svelte';
 	import SelectRating from './SelectRating.svelte';
 	import { editingSession } from '../stores';
@@ -25,11 +26,10 @@
 
 	// props
 	interface Props {
-		sessionProperties: SessionProperties;
-		venueProperties: VenueProperties;
+		sessionProperties: SessionPropertiesWithVenue;
 		sessionComments: SessionComment[];
 	}
-	let { sessionProperties, venueProperties, sessionComments }: Props = $props();
+	let { sessionProperties, sessionComments }: Props = $props();
 
 	// state management
 	let newCommentHidden: boolean = $state(true);
@@ -38,10 +38,20 @@
 	let newCommentAuthor: string = $state('');
 	let newRating: number = $state(0);
 
+	let sessionUrl: string = $state('');
+	let venueUrl: string = $state('');
+
 	let isMobile = $state(false);
 
 	onMount(() => {
 		isMobile = window.matchMedia('(max-width: 480px)').matches;
+
+		let { venueWebsite, sessionWebsite } = processVenueAndSessionUrl(
+			sessionProperties.venue_website,
+			sessionProperties.session_website
+		);
+		venueUrl = venueWebsite;
+		sessionUrl = sessionWebsite ? sessionWebsite : '';
 	});
 
 	// share functionality
@@ -113,24 +123,41 @@
 			<tr>
 				<td><LocationIcon title="Address of venue" class="icon-auto" /></td>
 				<td>
-					<a href={venueProperties?.venue_website} target="_blank">{venueProperties?.venue_name}</a
+					<a
+						href={`/${sanitisePathElement(sessionProperties.venue_name)}-${sessionProperties.venue_id}`}
+						>{sessionProperties?.venue_name}</a
 					><br />
-					{venueProperties?.address_first_line}<br />
-					{#if venueProperties.address_second_line}
-						{venueProperties?.address_second_line}<br />
+					{sessionProperties?.address_first_line}<br />
+					{#if sessionProperties.address_second_line}
+						{sessionProperties?.address_second_line}<br />
 					{/if}
-					{venueProperties?.city}<br />
-					{venueProperties?.postcode}<br />
+					{sessionProperties?.city}<br />
+					{sessionProperties?.postcode}<br />
 					<a
 						target="_blank"
-						href="https://www.google.com/maps/place/{venueProperties.address_first_line.replaceAll(
+						href="https://www.google.com/maps/place/{sessionProperties.address_first_line.replaceAll(
 							' ',
 							'+'
-						)},+{venueProperties.city.replaceAll(' ', '+')}+{venueProperties.postcode.replaceAll(
+						)},+{sessionProperties.city.replaceAll(' ', '+')}+{sessionProperties.postcode.replaceAll(
 							' ',
 							'+'
 						)}/">View on Google Maps</a
 					>
+				</td>
+			</tr>
+			<tr>
+				<td><HomeIcon title="Homepage" class="icon-auto" /></td>
+				<td
+					><a style="margin-top: 0.5em;" href={sessionProperties?.venue_website} target="_blank"
+						>{venueUrl}</a
+					>
+					{#if sessionUrl !== ''}
+						<br /><a
+							style="margin-top: 0.5em;"
+							href={sessionProperties?.session_website}
+							target="_blank">{sessionUrl}</a
+						>
+					{/if}
 				</td>
 			</tr>
 			<tr>
@@ -143,16 +170,16 @@
 					<td>{sessionProperties?.genres.map((i) => i.replace('_', ' ')).join(', ')}</td>
 				</tr>
 			{/if}
-			{#if venueProperties.backline && venueProperties.backline.length !== 0}
+			{#if sessionProperties.backline && sessionProperties.backline.length !== 0}
 				<tr>
 					<td><MicrophoneIcon title="Backline provided by venue" class="icon-auto" /></td>
 					<td
-						>{venueProperties?.backline
+						>{sessionProperties?.backline
 							.slice(0, -1)
 							.map((i) => i.replace('_', ' '))
 							.join(', ') +
 							' and ' +
-							venueProperties?.backline.slice(-1)[0].replace('_', ' ')}</td
+							sessionProperties?.backline.slice(-1)[0].replace('_', ' ')}</td
 					>
 				</tr>
 			{/if}

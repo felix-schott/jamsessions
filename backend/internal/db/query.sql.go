@@ -660,6 +660,27 @@ func (q *Queries) GetSessionsByGenreAsGeoJSON(ctx context.Context, genres []stri
 	return json_build_object, err
 }
 
+const getSessionsByVenueIdAsGeoJSON = `-- name: GetSessionsByVenueIdAsGeoJSON :one
+WITH t AS (
+    SELECT s.session_id, s.session_name, s.venue, s.genres, s.start_time_utc, s.interval, s.duration_minutes, s.description, s.session_website, s.dt_updated_utc, l.venue_id, l.venue_name, l.address_first_line, l.address_second_line, l.city, l.postcode, l.geom, l.venue_website, l.backline, l.venue_comments, l.venue_dt_updated_utc, coalesce(round(avg(rating), 2), 0)::real AS rating FROM london_jam_sessions.jamsessions s
+    JOIN london_jam_sessions.venues l ON s.venue = l.venue_id
+    LEFT OUTER JOIN london_jam_sessions.ratings r ON s.session_id = r.session
+    WHERE l.venue_id = $1
+    GROUP BY s.session_id, l.venue_id
+)
+SELECT json_build_object(
+    'type', 'FeatureCollection',
+    'features', json_agg(public.ST_AsGeoJSON(t.*)::json)
+) FROM t
+`
+
+func (q *Queries) GetSessionsByVenueIdAsGeoJSON(ctx context.Context, venueID int32) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getSessionsByVenueIdAsGeoJSON, venueID)
+	var json_build_object []byte
+	err := row.Scan(&json_build_object)
+	return json_build_object, err
+}
+
 const getVenueById = `-- name: GetVenueById :one
 SELECT venue_id, venue_name, address_first_line, address_second_line, city, postcode, geom, venue_website, backline, venue_comments, venue_dt_updated_utc FROM london_jam_sessions.venues
 WHERE venue_id = $1

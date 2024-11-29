@@ -35,7 +35,7 @@
 		by the event and how often the event happens.
 	</p>
 	<div style="display: flex; align-items: center; justify-content: center;">
-		&copy;&nbsp;<a href="http://felixschott.net">Felix Schott</a>
+		&copy;&nbsp;<a href="https://felixschott.net">Felix Schott</a>
 		<a href="https://github.com/felix-schott/jamsessions" style="color: black;" target="_blank"
 			><GithubIcon
 				height="1.2em"

@@ -1,9 +1,11 @@
 <script lang="ts">
+	import '../app.css';
 	import InfoPopup from '$lib/InfoPopup.svelte';
 	import LoadingScreen from '$lib/LoadingScreen.svelte';
 	import Header from '$lib/Header.svelte';
 	import Map from '$lib/Map.svelte';
-	import { addSessionPopupVisible, activeTab, editingSession } from '../stores';
+	import type { SessionOptions } from '../api';
+	import { loading, activeTab, editingSession } from '../stores';
 	import AddSessionPopup from '$lib/AddSessionPopup.svelte';
 	import ViewSelect from '$lib/ViewSelect.svelte';
 	import SidePanel from '$lib/SidePanel.svelte';
@@ -18,6 +20,12 @@
 	let headerRelative = $derived($activeTab !== 'map');
 
 	let viewSelect: ViewSelect | undefined = $state();
+
+	// session view: $selectedSessions must be active session, previous params must be stored in session storage
+	// venue view: $selectedSessions must be session associated with venue, previous params must be stored in session storage
+	// start view: $selectedSessions must be all session matching the filters
+
+	// loaddata in page.ts/page.svelte??
 </script>
 
 <div id="app" class="flex-column">
@@ -40,13 +48,16 @@
 			<SidePanel
 				background={$activeTab === 'map'}
 				hide={() => {
-					console.log('hey', $activeTab);
 					if ($activeTab === 'session') {
 						if ($editingSession) {
 							$editingSession = false;
 						} else window.location.assign('/');
 					} else if ($activeTab === 'list') {
 						$activeTab = 'map';
+					} else if ($activeTab === 'venue') {
+						window.location.assign('/');
+					} else {
+						throw 'not implemented for ' + $activeTab;
 					}
 				}}>{@render children?.()}</SidePanel
 			>

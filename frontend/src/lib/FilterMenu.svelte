@@ -1,13 +1,7 @@
 <script lang="ts">
-	import {
-		loading,
-		filterMenuVisible,
-		selectedSessions,
-		visibleLayer,
-		selectedDateRange
-	} from '../stores';
+	import { loading, filterMenuVisible, selectedSessions, selectedDateRange } from '../stores';
 	import Modal from './Modal.svelte';
-	import { Backline, Genre, type SessionFeatureCollection, MapLayer } from '../types';
+	import { Backline, Genre, type SessionFeatureCollection } from '../types';
 	import { getSessions, type SessionOptions } from '../api';
 	import MultiSelect from './MultiSelect.svelte';
 	import MicrophoneIcon from './icons/MicrophoneIcon.svelte';
@@ -56,7 +50,6 @@
 			alert('An error occured when waiting for data from the server: ' + (e as Error).message);
 			throw e;
 		}
-		$visibleLayer = MapLayer.SESSIONS;
 		$loading = false;
 	};
 

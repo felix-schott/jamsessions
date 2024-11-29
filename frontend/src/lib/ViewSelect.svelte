@@ -10,10 +10,11 @@
 
 	let { class: _class = '' }: Props = $props();
 
-	let inSessionView = $state(false);
+	let inSessionView = $state(false); // whether or not we're in the session view (SessionDetails)
 	onMount(() => {
 		inSessionView =
-			window.location.pathname === '/' + window.sessionStorage.getItem('activeSessionId');
+			window.location.pathname.split('/').filter((i) => i).length === 2 &&
+			window.location.pathname.endsWith(window.sessionStorage.getItem('activeSessionId')!);
 	});
 </script>
 
