@@ -1,6 +1,6 @@
-import { Backline, Genre, type CommentBody, type SessionWithVenueFeatureCollection, type SessionComment, type VenuesFeatureCollection, type SessionWithVenueFeature, type VenueFeature, type VenueProperties, type SessionProperties, type SessionPropertiesWithVenue } from "./types";
+import { Backline, Genre, type CommentBody, type SessionWithVenueFeatureCollection, type SessionComment, type VenuesFeatureCollection, type SessionWithVenueFeature, type VenueFeature, type VenueProperties, type SessionProperties, type SessionPropertiesWithVenue, type SessionFeatureCollection } from "./types";
 
-const API_ROOT = process.env.API_ADDRESS.replace("/\/$/", "");
+const API_ROOT = process.env.API_ADDRESS?.replace("/\/$/", "");
 const API_VERSION = "v1";
 
 const API_ADDRESS = API_ROOT + "/" + API_VERSION;
@@ -60,6 +60,15 @@ export const getSessionById = async (id: number): Promise<SessionWithVenueFeatur
         throw new Error((await response.json() as ErrorResponse)["detail"])
     } else {
         return await response.json() as SessionWithVenueFeature;
+    }
+}
+
+export const getSessionsByVenueId = async (venueId: number): Promise<SessionWithVenueFeatureCollection> => {
+    let response = await fetch(API_ADDRESS + "/venues/" + venueId + "/jamsessions")
+    if (!response.ok) {
+        throw new Error((await response.json() as ErrorResponse)["detail"])
+    } else {
+        return await response.json() as SessionWithVenueFeatureCollection;
     }
 }
 

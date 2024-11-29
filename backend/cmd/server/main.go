@@ -75,7 +75,9 @@ func main() {
 
 	fuego.Get(v1, "/venues", GetVenues).Summary("Get all venues")
 
-	fuego.Get(v1, "/venues/{id}", GetVenueById).Summary("Get a venues by its ID")
+	fuego.Get(v1, "/venues/{id}", GetVenueById).Summary("Get a venue by its ID")
+
+	fuego.Get(v1, "/venues/{id}/jamsessions", GetSessionsByVenueId).Summary("Get jam sessions by venue ID")
 
 	fuego.Post(v1, "/venues", PostVenue).Summary("Add a venue")
 

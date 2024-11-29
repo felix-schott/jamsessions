@@ -2,8 +2,8 @@
 	import { Interval, type SessionWithVenueFeature } from '../types';
 	import { selectedSessions } from '../stores';
 	import { untrack } from 'svelte';
+	import { sanitisePathElement } from './uriUtils';
 	import InfoIcon from './icons/InfoIcon.svelte';
-	import SidePanel from './SidePanel.svelte';
 
 	type SessionsByDate = { [key: string]: SessionWithVenueFeature[] };
 	let sessionsByDate: SessionsByDate = $state({});
@@ -33,7 +33,9 @@
 			onclick={() => {
 				window.sessionStorage.setItem('activeSessionId', session.properties.session_id!.toString());
 				if (window.matchMedia('(max-width: 480px)').matches) {
-					window.location.assign('/' + session.properties.session_id);
+					window.location.assign(
+						`/${sanitisePathElement(session.properties.venue_name)}-${session.properties.venue}/${sanitisePathElement(session.properties.session_name)}-${session.properties.session_id}`
+					);
 				} else {
 					document.getElementById('map')?.dispatchEvent(new Event('zoom'));
 				}

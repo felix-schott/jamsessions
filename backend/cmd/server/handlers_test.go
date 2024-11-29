@@ -105,6 +105,33 @@ func TestHandlers(t *testing.T) {
 		t.Errorf("the following error occured when trying to insert test session 2: %v", err)
 	}
 
+	testVenueId2, err := queries.InsertVenue(ctx, dbutils.InsertVenueParams{
+		VenueName:        "TEST HANDLERS 2",
+		AddressFirstLine: "2 Main Street",
+		City:             "London",
+		Postcode:         "ABC 123",
+		Geom:             geom.NewPoint(geom.XY).MustSetCoords([]float64{-0.502, 51.514}),
+		VenueWebsite:     ptr("https://www.test.com/"),
+		Backline:         []string{"PA", "Drums"},
+		VenueComments:    []string{"Comment 1", "comment 2"},
+	})
+	if err != nil {
+		t.Errorf("the following error occurred when trying to insert a Venue record: %v", err)
+	}
+
+	// add test data - session (tests use ephemeral databases so no need for cleanup after tests)
+	testSession3Id, err := queries.InsertJamSession(ctx, dbutils.InsertJamSessionParams{
+		SessionName:     "test_session3",
+		StartTimeUtc:    pgtype.Timestamptz{Time: time.Date(2024, 1, 1, 19, 30, 0, 0, time.UTC), Valid: true},
+		Interval:        "Weekly",
+		DurationMinutes: 120,
+		Venue:           testVenueId2,
+		Genres:          []string{"Blues", "Jazz-Funk"},
+	})
+	if err != nil {
+		t.Errorf("the following error occured when trying to insert test session 1: %v", err)
+	}
+
 	t.Run("GetAllVenues", func(t *testing.T) {
 		handler := fuego.HTTPHandler(s, GetVenues)
 		req := httptest.NewRequest(http.MethodGet, "/venues", nil)
@@ -126,9 +153,40 @@ func TestHandlers(t *testing.T) {
 		}
 	})
 
+	t.Run("GetSessionsByVenueId", func(t *testing.T) {
+		handler := fuego.HTTPHandler(s, GetSessionsByVenueId)
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/venues/%v/jamsessions", testVenueId2), nil)
+		req.SetPathValue("id", fmt.Sprint(testVenueId2))
+		w := httptest.NewRecorder()
+		handler(w, req)
+		res := w.Result()
+		defer res.Body.Close()
+		data, err := io.ReadAll(res.Body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+		var body types.SessionFeatureCollection
+		err = json.Unmarshal(data, &body)
+		if err != nil {
+			t.Errorf("expected error to be nil got %v", err)
+		}
+		if len(body.Features) != 1 {
+			var sessionNames []string = make([]string, len(body.Features))
+			var venues []int32 = make([]int32, len(body.Features))
+			for i, s := range body.Features {
+				sessionNames[i] = *s.Properties.SessionName
+				venues[i] = *s.Properties.Venue
+			}
+			t.Errorf("expected exactly 1 feature in the session feature collection, got sessions %v (with venues %v)", sessionNames, venues)
+			t.FailNow()
+		}
+
+		checkResultSetForSessionIds(t, []int32{testSession3Id}, body)
+	})
+
 	t.Run("GetAllSessions", func(t *testing.T) {
 		handler := fuego.HTTPHandler(s, GetSessions)
-		req := httptest.NewRequest(http.MethodGet, "/sessions", nil)
+		req := httptest.NewRequest(http.MethodGet, "/jamsessions", nil)
 		w := httptest.NewRecorder()
 		handler(w, req)
 		res := w.Result()

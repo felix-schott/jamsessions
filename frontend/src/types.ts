@@ -1,12 +1,6 @@
 import type { FeatureCollection, Feature, Point } from "geojson";
 
-export enum MapLayer {
-	NONE,
-	SESSIONS,
-	VENUES
-}
-
-export type TabOptions = "map" | "list" | "session";
+export type TabOptions = "map" | "list" | "session" | "venue";
 
 export enum Backline {
 	PA = 'PA',

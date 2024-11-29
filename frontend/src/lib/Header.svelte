@@ -1,16 +1,14 @@
 <script lang="ts">
-	import '../app.css';
-	import { onMount } from 'svelte';
 	import {
-		loading,
-		selectedSessions,
+		selectedDateStr,
 		filterMenuVisible,
-		visibleLayer,
 		infoVisible,
-		selectedDateRange
+		selectedDateRange,
+		selectedSessions,
+		loading
 	} from '../stores';
-	import { getSessions, type SessionOptions } from '../api';
-	import { MapLayer, type SessionFeatureCollection, Genre, Backline } from '../types';
+	import { type SessionOptions, getSessions } from '../api';
+	import type { Backline, Genre } from '../types';
 	import SettingsIcon from '../lib/icons/SettingsIcon.svelte';
 	import InfoIcon from '../lib/icons/InfoIcon.svelte';
 
@@ -20,51 +18,36 @@
 
 	let { positionRelative }: Props = $props();
 
-	const today = new Date();
-	const todayString = today.toISOString().slice(0, 10);
-	let selectedDateStr: string = $state('');
-
 	const onDateChange = async () => {
-		if (selectedDateStr) {
-			$loading = true;
-			window.sessionStorage.setItem('selectedDateStr', selectedDateStr);
-			try {
-				let params: SessionOptions = {
-					date: new Date(selectedDateStr),
-					backline: window.sessionStorage.getItem('selectedBackline')?.split(',') as Backline[],
-					genre: window.sessionStorage.getItem('selectedGenre') as Genre
-				};
-				if (
-					window.sessionStorage.getItem('selectedDateRange') &&
-					window.sessionStorage.getItem('selectedDateRange') !== '0'
-				) {
-					let endDate = new Date(selectedDateStr);
-					endDate!.setDate(
-						endDate!.getDate() + parseInt(window.sessionStorage.getItem('selectedDateRange')!)
-					);
-					params['endDate'] = endDate;
-				}
-				$selectedSessions = await getSessions(params);
-			} catch (e) {
-				alert('An error occured when waiting for data from the server: ' + (e as Error).message);
-				throw e;
+		$loading = true;
+
+		window.sessionStorage.setItem('selectedDateStr', $selectedDateStr);
+
+		// load data from backend
+		try {
+			let params: SessionOptions = {
+				date: new Date($selectedDateStr),
+				backline: window.sessionStorage.getItem('selectedBackline')?.split(',') as Backline[],
+				genre: window.sessionStorage.getItem('selectedGenre') as Genre
+			};
+			if (
+				window.sessionStorage.getItem('selectedDateRange') &&
+				window.sessionStorage.getItem('selectedDateRange') !== '0'
+			) {
+				let endDate = new Date($selectedDateStr);
+				endDate!.setDate(
+					endDate!.getDate() + parseInt(window.sessionStorage.getItem('selectedDateRange')!)
+				);
+				params['endDate'] = endDate;
 			}
-
-			$visibleLayer = MapLayer.SESSIONS;
+			$selectedSessions = await getSessions(params);
+		} catch (e) {
+			alert('An error occured when waiting for data from the server: ' + (e as Error).message);
 			$loading = false;
+			throw e;
 		}
+		$loading = false;
 	};
-
-	onMount(async () => {
-		// retrieve data from session storage
-		let storedDateStr = window.sessionStorage.getItem('selectedDateStr');
-		if (storedDateStr === null) {
-			selectedDateStr = todayString;
-		} else {
-			selectedDateStr = storedDateStr;
-		}
-		onDateChange();
-	});
 </script>
 
 <div class="top-bar vertically-centered" class:relative={positionRelative}>
@@ -92,7 +75,12 @@
 				$filterMenuVisible = true;
 			}}
 		/>
-		<input type="date" min={todayString} bind:value={selectedDateStr} onchange={onDateChange} />
+		<input
+			type="date"
+			min={new Date().toISOString().slice(0, 10)}
+			bind:value={$selectedDateStr}
+			onchange={onDateChange}
+		/>
 		{#if $selectedDateRange > 0}
 			<span style="margin-left: 0.5em;">+{$selectedDateRange}</span>
 		{/if}

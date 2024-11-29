@@ -1,10 +1,10 @@
 import type { PageLoad } from './$types';
-import { activeTab } from '../../stores';
+import { activeTab } from '../../../stores';
 
 export const load: PageLoad = ({ params }) => {
     activeTab.set("session");
     return {
-        sessionId: params.sessionId
+        sessionId: parseInt(params.sessionSlug.split("-")[params.sessionSlug.split("-").length - 1])
     }
 }
 
