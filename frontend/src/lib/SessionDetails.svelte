@@ -118,7 +118,7 @@
 			>
 		</h2>
 	</div>
-	<table>
+	<table class="session-info">
 		<tbody>
 			<tr>
 				<td><LocationIcon title="Address of venue" class="icon-auto" /></td>
@@ -138,10 +138,10 @@
 						href="https://www.google.com/maps/place/{sessionProperties.address_first_line.replaceAll(
 							' ',
 							'+'
-						)},+{sessionProperties.city.replaceAll(' ', '+')}+{sessionProperties.postcode.replaceAll(
+						)},+{sessionProperties.city.replaceAll(
 							' ',
 							'+'
-						)}/">View on Google Maps</a
+						)}+{sessionProperties.postcode.replaceAll(' ', '+')}/">View on Google Maps</a
 					>
 				</td>
 			</tr>
@@ -210,88 +210,85 @@
 		/>
 	</div>
 	<div class="comments">
-		<ul>
-			{#each sessionComments as comment}
-				<li>
-					<span
-						><Rating style="margin-right: 0.3em;" n={comment.rating ? comment.rating : 0} /></span
-					>
-					<span>{comment.content}</span>
-					<span
-						><i>
-							&mdash; {comment.author}, {new Date(comment.dt_posted).toLocaleDateString()}</i
-						></span
-					>
-				</li>
-			{/each}
-			<div
-				class:horizontal-center={newCommentHidden}
-				style="margin-top: 1em;"
-				class:hidden={!newCommentHidden}
-			>
-				<button
+		{#each sessionComments as comment}
+			<div class="comment">
+				<Rating
+					style="margin-right: 0.3em; padding-top: 0.3em; padding-right: 0.5em;"
+					n={comment.rating ? comment.rating : 0}
+				/>
+				<div>
+					{comment.content}
+					<i> &mdash; {comment.author}, {new Date(comment.dt_posted).toLocaleDateString()}</i>
+				</div>
+			</div>
+		{/each}
+		<div
+			class:horizontal-center={newCommentHidden}
+			style="margin-top: 1em;"
+			class:hidden={!newCommentHidden}
+		>
+			<button
+				title="Add comment"
+				style="display: flex; align-items: center; margin-bottom: 1em; padding: 0.3em 0.6em; font-size: smaller;"
+				onclick={() => {
+					newCommentHidden = false;
+				}}
+				><PlusIcon
 					title="Add comment"
-					style="display: flex; align-items: center; padding: 0.3em 0.6em; font-size: smaller;"
-					onclick={() => {
-						newCommentHidden = false;
-					}}
-					><PlusIcon
-						title="Add comment"
-						style="cursor: pointer; margin-right: 0.3em;"
-						class="icon-auto"
-					/> Add comment</button
-				>
-			</div>
-			<div
-				style="background-color: lightgrey; border-radius: 10px; padding: 0.5em 1em 1em; margin-top: 1em;"
-				class:hidden={newCommentHidden}
+					style="cursor: pointer; margin-right: 0.3em;"
+					class="icon-auto"
+				/> Add comment</button
 			>
-				<span style="display: inline-flex; margin-top: 0.7em;"><b>Add comment</b></span>
-				<span
-					title="Close new comment section"
-					role="button"
-					style="cursor: pointer; float: right; color: red;"
+		</div>
+		<div
+			style="background-color: lightgrey; border-radius: 10px; padding: 0.5em 1em 1em; margin-top: 1em;"
+			class:hidden={newCommentHidden}
+		>
+			<span style="display: inline-flex; margin-top: 0.7em;"><b>Add comment</b></span>
+			<span
+				title="Close new comment section"
+				role="button"
+				style="cursor: pointer; float: right; color: red;"
+				onclick={() => {
+					newCommentHidden = true;
+				}}>×</span
+			>
+			<p style="font-size: smaller;">
+				If you want to report inaccurate data, please <span
 					onclick={() => {
-						newCommentHidden = true;
-					}}>×</span
-				>
-				<p style="font-size: smaller;">
-					If you want to report inaccurate data, please <span
-						onclick={() => {
-							$editingSession = true;
-						}}
-						style="color: #646cff; cursor: pointer;
+						$editingSession = true;
+					}}
+					style="color: #646cff; cursor: pointer;
 	">click here</span
-					> instead.
-				</p>
-				<textarea
-					placeholder="Describe your experience at the jam session and provide useful information for others."
-					bind:value={newCommentContent}
-					id="new-comment"
-					style="width: 100%; height: 3em; margin-top: 1em;"
-				></textarea>
-				<div style="margin-top: 0.5em; display: flex; align-items: center;">
-					Rate your experience: <SelectRating
-						style="margin-left: 0.3em;"
-						onchange={(rating) => {
-							newRating = rating;
-						}}
-					/>
-				</div>
-				<label style="display: flex; align-items: center; margin-top: 0.5em;"
-					>Your name: <InfoIcon
-						style="margin-right: 0.3em;"
-						title="This is the name that appears next to your comment - it can be your first name, your nickname or however you wish to present."
-					/><input bind:value={newCommentAuthor} id="new-comment-author" type="text" /></label
-				>
-				<div class="horizontal-center">
-					<button
-						style="font-size: smaller; margin-top: 0.5em; background-color: white; font-color: black;"
-						onclick={onSubmitNewComment}>Submit</button
-					>
-				</div>
+				> instead.
+			</p>
+			<textarea
+				placeholder="Describe your experience at the jam session and provide useful information for others."
+				bind:value={newCommentContent}
+				id="new-comment"
+				style="width: 100%; height: 3em; margin-top: 1em;"
+			></textarea>
+			<div style="margin-top: 0.5em; display: flex; align-items: center;">
+				Rate your experience: <SelectRating
+					style="margin-left: 0.3em;"
+					onchange={(rating) => {
+						newRating = rating;
+					}}
+				/>
 			</div>
-		</ul>
+			<label style="display: flex; align-items: center; margin-top: 0.5em;"
+				>Your name: <InfoIcon
+					style="margin-right: 0.3em;"
+					title="This is the name that appears next to your comment - it can be your first name, your nickname or however you wish to present."
+				/><input bind:value={newCommentAuthor} id="new-comment-author" type="text" /></label
+			>
+			<div class="horizontal-center">
+				<button
+					style="font-size: smaller; margin-top: 1em; background-color: white; font-color: black;"
+					onclick={onSubmitNewComment}>Submit</button
+				>
+			</div>
+		</div>
 	</div>
 {:else}
 	<EditSession properties={sessionProperties} />
@@ -303,16 +300,19 @@
 		justify-content: center;
 	}
 
-	table {
+	table.session-info {
 		margin-left: 1em;
 	}
 
 	td {
 		vertical-align: top;
+	}
+
+	table.session-info td {
 		padding: 0.5em;
 	}
 
-	td:first-child {
+	table.session-info td:first-child {
 		padding-top: 0.5em;
 	}
 
@@ -323,27 +323,18 @@
 		margin-top: 1em;
 	}
 
-	ul {
-		padding-inline-start: 0;
-		margin-block-start: 0;
-	}
-
-	li {
+	div.comment {
 		list-style-type: none;
 		margin: 0.5em;
 		margin-left: 1em;
+		margin-bottom: 1em;
 		display: flex;
-		align-items: center;
+		flex-direction: row;
 	}
 
 	@media (max-width: 480px) {
-		li {
+		div.comment {
 			flex-direction: column;
-			align-items: unset;
-		}
-
-		li span:not(:first-child) {
-			margin-top: 0.2em;
 		}
 	}
 
