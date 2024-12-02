@@ -17,6 +17,7 @@ and this project adheres to [Calendar Versioning](https://calver.org/) (`YYYY.MM
 
 ### Added
 
+- Added analytics using Plausible (PR [#100](https://github.com/felix-schott/jamsessions/pull/100))
 - Added a Telegram Bot API integration for alerts when there are pending data migrations (PR [#97](https://github.com/felix-schott/jamsessions/pull/97))
 - Added a venue page that lists all jam sessions happening at a certain venue (PRs [#94](https://github.com/felix-schott/jamsessions/pull/94), [#99](https://github.com/felix-schott/jamsessions/pull/99))
 - Added genres 'Hip-Hop' and 'RnB' (PR [#86](https://github.com/felix-schott/jamsessions/pull/86))
