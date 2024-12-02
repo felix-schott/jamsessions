@@ -5,11 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Calendar Versioning](https://calver.org/) (`YYYY.MM.MICRO-TAG`).
 
+## [v2024.12.0] - 2024-12-02
+
+### Changed
+
+- Changed path structure from `/{sessionId}` to `/{venueName}-{venueId}/{sessionName}-{sessionId}` (PR [#94](https://github.com/felix-schott/jamsessions/pull/94))
+
+### Fixed
+
+- Fixed small bug on frontend that resulted in error messages after hitting the CLear button of the date input (PR [#90](https://github.com/felix-schott/jamsessions/pull/90))
+
+### Added
+
+- Added a Telegram Bot API integration for alerts when there are pending data migrations (PR [#97](https://github.com/felix-schott/jamsessions/pull/97))
+- Added a venue page that lists all jam sessions happening at a certain venue (PRs [#94](https://github.com/felix-schott/jamsessions/pull/94), [#99](https://github.com/felix-schott/jamsessions/pull/99))
+- Added genres 'Hip-Hop' and 'RnB' (PR [#86](https://github.com/felix-schott/jamsessions/pull/86))
+- Added validation for string enums like `Genre` and `Backline` using custom `MarshalJSON` methods (PR [#86](https://github.com/felix-schott/jamsessions/pull/86))
+
 ## [v2024.11.4-beta] - 2024-11-19
 
 ### Fixed
 
-- Optimised UX when switching between list and map view ([#79](https://github.com/felix-schott/jamsessions/pull/79))
+- Optimised UX when switching between list and map view (PR [#79](https://github.com/felix-schott/jamsessions/pull/79))
 
 ### Added
 

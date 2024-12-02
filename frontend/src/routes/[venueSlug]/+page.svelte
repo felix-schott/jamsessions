@@ -4,15 +4,31 @@
 	import type { SessionWithVenueFeatureCollection, SessionPropertiesWithVenue } from '../../types';
 	import TimeIcon from '$lib/icons/TimeIcon.svelte';
 	import FileTrayIcon from '$lib/icons/FileTrayIcon.svelte';
+	import ShareIcon from '$lib/icons/ShareIcon.svelte';
 	import { sanitisePathElement, extractDomain } from '$lib/uriUtils';
 	import { constructTimeString } from '$lib/timeUtils';
 	import { selectedSessions } from '../../stores';
+	import { onMount } from 'svelte';
 
 	interface Props {
 		data: VenueSlugData;
 	}
 
 	let { data }: Props = $props();
+
+	// share functionality
+	const onShare = async (venueName: string) => {
+		const shareData = {
+			title: venueName,
+			text: 'Check out this jam session',
+			url: window.location.href
+		};
+		try {
+			await navigator.share(shareData);
+		} catch (err) {
+			console.log('Could not share:', err);
+		}
+	};
 
 	const onClick = (properties: SessionPropertiesWithVenue) => {
 		window.sessionStorage.setItem('activeSessionId', properties.session_id!.toString());
@@ -26,7 +42,6 @@
 			try {
 				let response = await getSessionsByVenueId(data.venueId);
 				$selectedSessions = response;
-				console.log('length', $selectedSessions.features.length);
 				return response;
 			} catch (e) {
 				alert('An error occured when waiting for data from the server: ' + (e as Error).message);
@@ -38,7 +53,19 @@
 {#await getSessionsByVenueIdWithErrorHandling() then fc}
 	<div class="venue-overview">
 		<div class="venue-info">
-			<h2>{fc.features[0].properties.venue_name}</h2>
+			<h2>
+				{fc.features[0].properties.venue_name}
+				{#if navigator.share !== undefined}
+					<!-- only works on mobile devices -->
+					<ShareIcon
+						style="cursor: pointer; margin-left: 0.3em; vertical-align: text-bottom;"
+						height="1.1em"
+						width="1.1em"
+						title="Share link to session"
+						onclick={() => onShare(fc.features[0].properties.venue_name)}
+					/>
+				{/if}
+			</h2>
 			<div>
 				<a href={fc.features[0].properties.venue_website} target="_blank"
 					>{extractDomain(fc.features[0].properties.venue_website)}</a

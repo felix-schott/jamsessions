@@ -41,11 +41,7 @@
 	let sessionUrl: string = $state('');
 	let venueUrl: string = $state('');
 
-	let isMobile = $state(false);
-
 	onMount(() => {
-		isMobile = window.matchMedia('(max-width: 480px)').matches;
-
 		let { venueWebsite, sessionWebsite } = processVenueAndSessionUrl(
 			sessionProperties.venue_website,
 			sessionProperties.session_website
@@ -96,7 +92,7 @@
 			<!-- https://stackoverflow.com/a/24357132 -->
 			<span class="line">{sessionProperties?.session_name} </span>
 			<span class="line">
-				{#if isMobile}
+				{#if navigator.share !== undefined}
 					<!-- only works on mobile devices -->
 					<ShareIcon
 						style="cursor: pointer; margin-left: 0.3em; vertical-align: text-bottom;"
