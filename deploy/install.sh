@@ -36,6 +36,9 @@ wget -q -O $directory/Caddyfile "https://raw.githubusercontent.com/felix-schott/
 echo "Downloading prometheus.yml"
 wget -q -O $directory/prometheus.yml "https://raw.githubusercontent.com/felix-schott/jamsessions/refs/tags/$tag/deploy/prometheus.yml"
 
+echo "Downloading migrations-alert.sh"
+wget -q -O $directory/migrations-alert.sh "https://raw.githubusercontent.com/felix-schott/jamsessions/refs/tags/$tag/deploy/migrations-alert.sh"
+
 [[ ! -f $directory/.env ]] && {
     echo ".env doesn't exist yet - creating file and default directories"
     touch $directory/.env
@@ -85,5 +88,12 @@ will write little bash scripts to $directory/migrations that make use the dbcli 
 
 Review the script contents and execute run-migrations.sh to apply all changes.
 EOF
+
+crontab -l | grep migrations-alert.sh -q &> /dev/null && {
+    echo "Alerting cron job already installed"
+} || {
+    echo "Installing alerting cron job";
+    (crontab -l ; echo "0 */2 * * * bash $directory/migrations-alert.sh") | crontab -
+}
 
 echo "Finished installation process - please consult the generated README file for further instructions."
