@@ -32,13 +32,13 @@
 	let venueCity: string = $state('');
 	let venuePostcode: string = $state('');
 	let venueWebsite: string = $state('');
+	let submissionNotes: string = $state('');
+	let submissionEmail: string = $state('');
 
 	let venuesLoaded: boolean = $state(false);
 
 	let newVenueHidden = $derived(venueId != 'new-venue' && venuesLoaded);
-	let buttonDisabled = $derived(
-		!sessionName && !sessionTimeStart && !sessionTimeFinish && !sessionDescription
-	);
+	let buttonDisabled = $state(true);
 
 	// small wrapper around getVenues for better state management
 	// (venuesLoaded controls whether the menu to add a venue is shown)
@@ -58,7 +58,7 @@
 		return [];
 	};
 
-	const onSubmit = async (ev: MouseEvent) => {
+	const onSubmit = async (ev: SubmitEvent) => {
 		ev.preventDefault();
 
 		let d = new Date(sessionDate);
@@ -78,6 +78,12 @@
 			),
 			session_website: sessionWebsite
 		};
+		if (submissionNotes !== '') {
+			sessionParams['submission_notes'] = submissionNotes;
+		}
+		if (submissionEmail !== '') {
+			sessionParams['submission_email'] = submissionEmail;
+		}
 		// add venue if necessary
 		if (venueId == 'new-venue') {
 			if (venueName === '') {
@@ -86,15 +92,21 @@
 			}
 			if (venueAddress1 === '') {
 				alert('Please add the address of the venue');
+				return;
 			}
 			if (venueCity === '') {
 				alert('Please add the city of the venue');
+				return;
 			}
 			if (venuePostcode === '') {
 				alert('Please add the city of the venue');
+				return;
 			}
-			if (venueWebsite === '') {
-				alert('Please add the website of the venue');
+			if (venueWebsite === '' && sessionWebsite === '' && submissionNotes === '') {
+				alert(
+					'Since no website for the venue/session is provided, please specify the source of your information in the Submission notes.'
+				);
+				return;
 			}
 			let venueParams: VenueProperties = {
 				venue_name: venueName,
@@ -109,6 +121,12 @@
 			};
 			Object.assign(sessionParams, venueParams);
 		} else {
+			if (sessionWebsite === '' && submissionNotes === '') {
+				alert(
+					'Since no website for the session is provided, please specify the source of your information in the Submission notes.'
+				);
+				return;
+			}
 			sessionParams['venue'] = parseInt(venueId);
 		}
 		try {
@@ -133,7 +151,12 @@
 				$addSessionPopupVisible = false;
 			}}
 		>
-			<form bind:this={form}>
+			<form
+				onsubmit={onSubmit}
+				onchange={(ev) => {
+					buttonDisabled = !(ev.target! as HTMLFormElement).checkValidity();
+				}}
+			>
 				<h2>Add new session to the database</h2>
 				<div class="card">
 					<h3>Venue</h3>
@@ -158,49 +181,60 @@
 							</div>
 							<label for="venue-name"
 								>Name of the venue <input
+									class="input"
 									id="venue-name"
+									name="venue-name"
 									bind:value={venueName}
 									type="text"
-									required
+									required={!newVenueHidden}
 								/></label
 							>
 							<label for="venue-address-first-line"
 								>Address 1st line <input
 									type="text"
+									class="input"
+									name="venue-address-first-line"
 									bind:value={venueAddress1}
 									id="venue-address-first-line"
-									required
+									required={!newVenueHidden}
 								/></label
 							>
 							<label for="venue-address-second-line"
 								>Address 2nd line <input
 									type="text"
+									class="input"
 									bind:value={venueAddress2}
+									name="venue-address-second-line"
 									id="venue-address-second-line"
 								/></label
 							>
 							<label for="venue-address-city"
 								>City <input
 									type="text"
+									class="input"
+									name="venue-address-city"
 									id="venue-address-city"
 									bind:value={venueCity}
-									required
+									required={!newVenueHidden}
 								/></label
 							>
 							<label for="venue-address-postcode"
 								>Postcode <input
 									type="text"
+									class="input"
 									id="venue-address-postcode"
+									name="venue-address-postcode"
 									bind:value={venuePostcode}
-									required
+									required={!newVenueHidden}
 								/></label
 							>
 							<label for="venue-website"
 								>Website <input
 									type="url"
+									class="input"
 									id="venue-website"
+									name="venue-website"
 									bind:value={venueWebsite}
-									required
 								/></label
 							>
 						</div>
@@ -210,7 +244,7 @@
 								<label for="venue-backline-{backline}"
 									><input
 										type="checkbox"
-										class="backline-checkbox"
+										class="backline-checkbox input"
 										id="venue-backline-{backline}"
 										name={backline}
 									/>{backline.replace('_', ' ')}</label
@@ -225,6 +259,7 @@
 						<label for="session-name"
 							>Name of the session <input
 								id="session-name"
+								class="input"
 								bind:value={sessionName}
 								type="text"
 								required
@@ -234,6 +269,7 @@
 							<label for="session-date"
 								>Next date of the session <input
 									type="date"
+									class="input"
 									bind:value={sessionDate}
 									required
 								/></label
@@ -241,6 +277,7 @@
 							<label for="session-time-start"
 								>From <input
 									type="time"
+									class="input"
 									id="session-time-start"
 									bind:value={sessionTimeStart}
 									required
@@ -250,13 +287,14 @@
 								>To <input
 									type="time"
 									id="session-time-finish"
+									class="input"
 									bind:value={sessionTimeFinish}
 									min={sessionTimeStart}
 									required
 								/></label
 							>
 							<div>How often does the session happen?</div>
-							<select title="Select interval" bind:value={sessionInterval}>
+							<select title="Select interval" bind:value={sessionInterval} required>
 								{#if sessionDate !== ''}
 									{#each Object.values(Interval) as interval, idx}
 										{#if idx === 0}
@@ -289,7 +327,7 @@
 								<label for="session-genre-{genre}"
 									><input
 										type="checkbox"
-										class="genre-checkbox"
+										class="genre-checkbox input"
 										id="session-genre-{genre}"
 										name={genre}
 									/>{genre.replace('_', ' ')}</label
@@ -305,14 +343,43 @@
 									title="May be the same as the venue website."
 								/>
 							</div>
-							<input type="url" id="session-website" bind:value={sessionWebsite} required /></label
+							<input
+								class="input"
+								type="url"
+								id="session-website"
+								bind:value={sessionWebsite}
+							/></label
 						>
 					</div>
 				</div>
+				<div class="card">
+					<div class="vertical">
+						<label for="notes" class="inline"
+							>Submission notes <textarea
+								id="notes"
+								bind:value={submissionNotes}
+								style="height: 6em;"
+								placeholder="Please share the source of the information provided and anything else you would like the admin team to know."
+							></textarea></label
+						>
+					</div>
+					<div class="vertical">
+						<label for="email">Your email address (optional)</label><small style="max-width: 30em;"
+							>We might contact you about your submission if there are any open questions. Your
+							email address will not be shared with anyone outside the admin team and only be used
+							for the stated purpose.</small
+						><input
+							id="email"
+							name="email"
+							bind:value={submissionEmail}
+							style="margin-top: 0.5em;"
+							type="email"
+							placeholder="john.doe@example.com"
+						/>
+					</div>
+				</div>
 				<div style="display: flex; justify-content: center; margin-top: 1em;">
-					<button disabled={buttonDisabled} type="submit" onclick={onSubmit}
-						><span>Submit</span></button
-					>
+					<button disabled={buttonDisabled} type="submit"><span>Submit</span></button>
 				</div>
 			</form>
 		</Modal>
@@ -338,13 +405,13 @@
 		margin-bottom: 1em;
 	}
 
-	input {
+	.input {
 		max-width: 12em;
 		margin-left: 1em;
 	}
 
 	@media (max-width: 480px) {
-		input {
+		.input {
 			margin-left: 0;
 			max-width: 9em;
 		}

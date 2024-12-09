@@ -231,7 +231,7 @@ func GetSessionsByVenueId(c *fuego.ContextNoBody) (types.SessionWithVenueFeature
 // helper - https://github.com/golang/go/issues/63309
 func ptr[T any](t T) *T { return &t }
 
-func PostSession(c *fuego.ContextWithBody[types.SessionPropertiesWithVenue]) (types.SessionFeature[types.SessionProperties], error) {
+func PostSession(c *fuego.ContextWithBody[types.SessionPropertiesWithVenuePOST]) (types.SessionFeature[types.SessionProperties], error) {
 	payload, err := c.Body()
 	slog.Info("PostSession", "payload", payload)
 	if err != nil {
@@ -241,8 +241,14 @@ func PostSession(c *fuego.ContextWithBody[types.SessionPropertiesWithVenue]) (ty
 		}
 		return types.SessionFeature[types.SessionProperties]{}, errors.New("an unknown error occured")
 	}
+	var submissionNotes *string = payload.SubmissionNotes
+	var submissionEmail *string = payload.SubmissionEmail
+	payload.SubmissionNotes = nil
+	payload.SubmissionEmail = nil
+
 	var cmd string
 	var title string
+
 	var sessionJson []byte
 	if payload.VenueName != nil { // if venue fields are present in the payload, we create a new venue in the same transaction
 		venueJson, err := json.Marshal(payload.VenueProperties)
@@ -259,7 +265,6 @@ func PostSession(c *fuego.ContextWithBody[types.SessionPropertiesWithVenue]) (ty
 			return types.SessionFeature[types.SessionProperties]{}, errors.New("an unknown error occured")
 		}
 		sessionJson = []byte(strings.Replace(string(sessionJson), "-999999", "$new_id", -1))
-
 		cmd = fmt.Sprintf(`new_id=$(dbcli insert venue "%s");`+"\n"+`dbcli insert session "%s";`, venueJson, sessionJson)
 		title = fmt.Sprintf("insert_venue_%v_session_%v", *payload.VenueName, *payload.SessionName)
 		slog.Info("PostSession", "mode", "sessionAndVenue", "cmd", cmd)
@@ -272,6 +277,12 @@ func PostSession(c *fuego.ContextWithBody[types.SessionPropertiesWithVenue]) (ty
 		cmd = fmt.Sprintf(`dbcli insert session "%s"`, sessionJson)
 		title = fmt.Sprintf("insert_session_%v", *payload.SessionName)
 		slog.Info("PostSession", "mode", "sessionOnly", "cmd", cmd)
+	}
+	if submissionNotes != nil {
+		cmd += "\n# submission notes: " + *submissionNotes
+	}
+	if submissionEmail != nil {
+		cmd += "\n# email: " + *submissionEmail
 	}
 	if _, err := migrationutils.WriteMigration(cmd, title, migrationsDirectory); err != nil {
 		slog.Error("PostSession", "msg", err)

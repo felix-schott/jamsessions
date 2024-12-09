@@ -608,7 +608,61 @@ func TestHandlers(t *testing.T) {
 			t.Errorf("error reading file: %v", err)
 		}
 
-		matched, err := regexp.Match(fmt.Sprintf(`insert session "{\\"session_name\\":\\"%v\\",.*`, "TestInsert"), f)
+		matched, err := regexp.Match(fmt.Sprintf(`insert session "{\\"session_name\\":\\"%v\\",.*}"$`, "TestInsert"), f)
+		if err != nil {
+			t.Errorf("error when trying match with regex: %v", err)
+		}
+
+		if !matched {
+			t.Errorf("expected the regex to match. instead got file contents: %s", f)
+		}
+	})
+
+	t.Run("PostSessionWithSubmissionNotes", func(t *testing.T) {
+		// temp directory for migrations
+		migrationsDirectory = t.TempDir()
+
+		testBody, err := json.Marshal(types.SessionPropertiesWithVenuePOST{
+			SessionProperties: types.SessionProperties{SessionName: ptr("TestInsert"),
+				Venue:           &testVenueId,
+				Description:     ptr("Description."),
+				StartTimeUtc:    ptr(time.Date(2024, 3, 4, 5, 5, 3, 5, time.UTC)),
+				DurationMinutes: ptr(int16(90)),
+				Interval:        ptr(types.FirstOfMonth),
+				SessionWebsite:  ptr("https://example.org"),
+			},
+			SubmissionNotes: ptr("I run the session"),
+			SubmissionEmail: ptr("john.doe@example.com")})
+		if err != nil {
+			t.Error("could not marshal json:", err)
+			t.FailNow()
+		}
+
+		handler := fuego.HTTPHandler(s, PostSession)
+		req := httptest.NewRequest(http.MethodPost, "/jamsessions", bytes.NewReader(testBody))
+		w := httptest.NewRecorder()
+		handler(w, req)
+		res := w.Result()
+		if res.StatusCode != 201 {
+			t.Errorf("expected status code 201, got %v", res.StatusCode)
+		}
+
+		dir, err := os.ReadDir(migrationsDirectory)
+		if err != nil {
+			t.Errorf("couldn't read directory contents: %v", err)
+			t.FailNow()
+		}
+		if len(dir) != 1 {
+			t.Errorf("expected exactly 1 file in the directory, got %v", len(dir))
+			t.FailNow()
+		}
+
+		f, err := os.ReadFile(filepath.Join(migrationsDirectory, dir[0].Name()))
+		if err != nil {
+			t.Errorf("error reading file: %v", err)
+		}
+
+		matched, err := regexp.Match(fmt.Sprintf(`insert session "{\\"session_name\\":\\"%v\\",.*\n# submission notes: I run the session\n# email: john.doe@example.com`, "TestInsert"), f)
 		if err != nil {
 			t.Errorf("error when trying match with regex: %v", err)
 		}
@@ -622,7 +676,7 @@ func TestHandlers(t *testing.T) {
 		// temp directory for migrations
 		migrationsDirectory = t.TempDir()
 
-		testBody, err := json.Marshal(types.SessionPropertiesWithVenue{SessionProperties: types.SessionProperties{
+		testBody, err := json.Marshal(types.SessionPropertiesWithVenuePOST{SessionProperties: types.SessionProperties{
 			SessionName:     ptr("TestInsert2"),
 			Description:     ptr("Description."),
 			StartTimeUtc:    ptr(time.Date(2024, 3, 4, 5, 5, 3, 5, time.UTC)),

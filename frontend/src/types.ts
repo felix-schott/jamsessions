@@ -69,6 +69,8 @@ export interface SessionProperties {
 	session_website: string
 	rating?: number
 	dt_updated_utc?: Date
+	submission_notes?: string
+	submission_email?: string
 }
 
 export interface SessionComment {

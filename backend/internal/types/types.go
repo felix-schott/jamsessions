@@ -248,6 +248,13 @@ type SessionPropertiesWithVenue struct {
 	VenueProperties
 }
 
+type SessionPropertiesWithVenuePOST struct {
+	SessionProperties
+	VenueProperties
+	SubmissionNotes *string `json:"submission_notes,omitempty"`
+	SubmissionEmail *string `json:"submission_email,omitempty"`
+}
+
 type SessionFeature[T SessionProperties | SessionPropertiesWithVenue] struct {
 	Type       string   `json:"type"`
 	Properties T        `json:"properties"`
