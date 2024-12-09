@@ -25,7 +25,7 @@ jobs:
       - name: Prepare .env for tests
         run: |
           echo 'POSTGRES_PASSWORD="test_password"' > .env
-          echo 'READ_WRITE_PASSWORD="Tq43938!Tq43938!"' >> .env
+          echo 'READ_WRITE_PASSWORD="test_password"' >> .env
           echo 'POSTGRES_DB="london_jam_sessions"' >> .env
       - name: Run test suite
         run: make test-ci
