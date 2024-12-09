@@ -8,7 +8,6 @@
 	import { sanitisePathElement, extractDomain } from '$lib/uriUtils';
 	import { constructTimeString } from '$lib/timeUtils';
 	import { selectedSessions } from '../../stores';
-	import { onMount } from 'svelte';
 
 	interface Props {
 		data: VenueSlugData;
@@ -20,7 +19,7 @@
 	const onShare = async (venueName: string) => {
 		const shareData = {
 			title: venueName,
-			text: 'Check out this jam session',
+			text: 'Check out the jam sessions at this venue',
 			url: window.location.href
 		};
 		try {
