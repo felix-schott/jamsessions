@@ -89,11 +89,8 @@ will write little bash scripts to $directory/migrations that make use the dbcli 
 Review the script contents and execute run-migrations.sh to apply all changes.
 EOF
 
-crontab -l | grep migrations-alert.sh -q &> /dev/null && {
-    echo "Alerting cron job already installed"
-} || {
-    echo "Installing alerting cron job";
-    (crontab -l ; echo "0 */2 * * * bash $directory/migrations-alert.sh") | crontab -
-}
+echo "Installing alerting cron job"
+set +eo pipefail
+(crontab -l; echo "0 */2 * * * cd $directory && bash $directory/migrations-alert.sh $directory") | sort - | uniq - | crontab -;
 
 echo "Finished installation process - please consult the generated README file for further instructions."
