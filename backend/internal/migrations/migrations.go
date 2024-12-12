@@ -37,7 +37,6 @@ func WriteMigration(cmd string, title string, migrationsDirectory string) (strin
 		}
 	}
 	cleanCmd := strings.Join(subCmds, ";") // join back together
-	fmt.Println(cleanCmd)
 	os.WriteFile(fp, []byte("#!/usr/bin/env bash\n\n"+cleanCmd), fs.FileMode(int(0755)))
 	return fp, nil
 }
