@@ -134,7 +134,7 @@ func TestCli(t *testing.T) {
 		testSessionProps := types.SessionProperties{
 			SessionName:     ptr("Foo's Session"),
 			Venue:           ptr(int32(-999999)), // replace this after serialisation
-			Description:     ptr("Bla bla"),
+			Description:     ptr("A wise man once said: \"Bla bla\""),
 			StartTimeUtc:    ptr(time.Date(2024, 5, 7, 1, 1, 1, 1, time.UTC)),
 			DurationMinutes: ptr(int16(30)),
 			Interval:        ptr(types.Weekly),
