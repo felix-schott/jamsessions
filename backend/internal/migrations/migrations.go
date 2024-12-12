@@ -29,10 +29,11 @@ func WriteMigration(cmd string, title string, migrationsDirectory string) (strin
 		if len(subCmd) != 0 {
 			arr := strings.Split(subCmd, `"`)
 			newArr := make([]string, 3)
-			newArr[0] = arr[0]                                // everything up to the start of the json body
-			newArr[1] = strings.Join(arr[1:len(arr)-1], `\"`) // the json payload, here we escape all "
-			newArr[2] = arr[len(arr)-1]                       // end
-			subCmds[idx] = strings.Join(newArr, `"`)          // overwrite subcmd with the substituted string
+			newArr[0] = arr[0]                                       // everything up to the start of the json body
+			newArr[1] = strings.Join(arr[1:len(arr)-1], `\"`)        // the json payload, here we escape all "
+			newArr[1] = strings.ReplaceAll(newArr[1], `\\"`, `\\\"`) // " in the field values (e.g. speech marks) needs to be triple escaped ///"
+			newArr[2] = arr[len(arr)-1]                              // end
+			subCmds[idx] = strings.Join(newArr, `"`)                 // overwrite subcmd with the substituted string
 		}
 	}
 	cleanCmd := strings.Join(subCmds, ";") // join back together
