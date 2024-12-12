@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Calendar Versioning](https://calver.org/) (`YYYY.MM.MICRO-TAG`).
 
+## [v2024.12.1] - 2024-12-12
+
+### Added
+
+- Added field in `AddSessionPopup` for submission notes and optional email address plus backend support for that feature, implemented as comments in migration scripts (PR [#107](https://github.com/felix-schott/jamsessions/pull/107))
+
+### Fixed
+
+- Fixed bug in geocoding module that occured when an address 2nd line was supplied (PR [#106](https://github.com/felix-schott/jamsessions/pull/106))
+- Some fixes related to the `migrations-alert.sh` script (PR [#109](https://github.com/felix-schott/jamsessions/pull/109))
+
 ## [v2024.12.0] - 2024-12-02
 
 ### Changed
